@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+.venv/
+venv/
+env/
+
+# データベース（個人データを含む可能性あり）
+data/chat_memory.db
+data/chat_memory.db-journal
+data/chat_memory.db-shm
+data/chat_memory.db-wal
+
+# PyInstaller
+*.app
+*.dmg
+
+# macOS / FUSE
+.DS_Store
+.fuse_hidden*
+.DS_Store?
+._*
+.Spotlight-V7
+.Trashes
+Thumbs.db
+
+# 設定ファイル（APIキーを含む可能性あり）
+config.local.yaml
+
+# テスト一時ファイル
+*.log
+.pytest_cache/

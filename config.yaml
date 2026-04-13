@@ -1,0 +1,35 @@
+# OllamaMemoryChat 設定ファイル
+app:
+  name: "OllamaMemoryChat"
+  version: "0.1.0-beta"
+  port: 8765
+
+ai:
+  engine: "ollama"       # "ollama" または "openai_compatible"
+  ollama_endpoint: "http://localhost:11434"
+  ollama_model: "gemma3:4b"  # ← ユーザーのモデル名
+  openai_endpoint: ""
+  openai_model: ""
+  openai_api_key: ""     # 値は空のまま。ユーザーがUIから設定する
+
+memory:
+  compression_threshold: 10   # 何往復で圧縮するか
+  max_context_tokens: 2000     # 注入するサマリーの最大トークン目安
+
+commands:
+  builtin:
+    - name: "english"
+      description: "入力した日本語をネイティブな自然英語に翻訳します"
+      prompt: "以下のテキストを、ネイティブスピーカーが書くような自然な英語に翻訳してください。直訳ではなく、英語として自然な表現を使ってください。翻訳結果のみを出力してください。\n\nテキスト: {input}"
+    - name: "cal"
+      description: "文章の文法・表現を校正します（日本語・英語対応）"
+      prompt: "以下の文章を校正してください。誤字・脱字・文法ミス・不自然な表現があれば修正し、修正箇所と理由を説明してください。\n\nテキスト: {input}"
+    - name: "memory"
+      description: "保存されている記憶サマリーを表示します"
+      prompt: ""
+    - name: "clear"
+      description: "現在の会話セッションをリセットします（記憶サマリーは保持）"
+      prompt: ""
+    - name: "help"
+      description: "使用可能なコマンドの一覧を表示します"
+      prompt: ""

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>セットアップ — OllamaMemoryChat</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    /* セットアップ画面専用スタイル */
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #212121; }
+
+    .setup-wrapper {
+      width: 100%;
+      max-width: 640px;
+      padding: 24px;
+    }
+
+    .setup-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .setup-logo h1 { font-size: 28px; font-weight: 700; }
+    .setup-logo p { color: #9b9b9b; margin-top: 8px; font-size: 15px; }
+
+    /* ステップインジケーター */
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+      gap: 0;
+    }
+    .step-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      background: #2f2f2f; color: #9b9b9b;
+      border: 2px solid #444;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .step-dot.active { background: #10a37f; color: white; border-color: #10a37f; }
+    .step-dot.done { background: #0d8c6e; color: white; border-color: #0d8c6e; }
+    .step-line {
+      flex: 1; height: 2px; background: #444; max-width: 80px;
+      transition: background 0.3s;
+    }
+    .step-line.done { background: #10a37f; }
+
+    /* カード */
+    .setup-card {
+      background: #2f2f2f;
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid #444;
+    }
+
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .step-title {
+      font-size: 20px; font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .step-desc {
+      color: #9b9b9b; font-size: 14px; line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    /* ステータスバッジ */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .status-badge.checking { background: #3a3a3a; color: #9b9b9b; }
+    .status-badge.ok { background: rgba(16,163,127,0.15); color: #10a37f; }
+    .status-badge.ng { background: rgba(231,76,60,0.15); color: #e74c3c; }
+    .status-badge.warn { background: rgba(243,156,18,0.15); color: #f39c12; }
+
+    /* プログレスバー */
+    .progress-bar-wrap {
+      background: #444;
+      border-radius: 8px;
+      height: 8px;
+      margin: 16px 0;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar-wrap.visible { display: block; }
+    .progress-bar {
+      height: 100%; background: #10a37f;
+      border-radius: 8px;
+      transition: width 0.5s;
+      width: 0%;
+    }
+
+    .progress-text {
+      font-size: 13px; color: #9b9b9b;
+      min-height: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* モデルカード */
+    .model-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .model-card {
+      background: #3a3a3a;
+      border: 2px solid #555;
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .model-card:hover { border-color: #10a37f; background: #404040; }
+    .model-card.selected { border-color: #10a37f; background: rgba(16,163,127,0.1); }
+    .model-card.installed-badge { border-color: #27ae60; }
+
+    .model-info { flex: 1; }
+    .model-name { font-size: 15px; font-weight: 600; }
+    .model-desc { font-size: 12px; color: #9b9b9b; margin-top: 3px; line-height: 1.5; }
+    .model-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .model-tag {
+      background: #2f2f2f; border-radius: 10px;
+      padding: 2px 8px; font-size: 11px; color: #9b9b9b;
+    }
+    .model-size { font-size: 12px; color: #9b9b9b; white-space: nowrap; text-align: right; }
+    .model-size-num { font-size: 16px; font-weight: 600; color: #ececec; }
+    .model-badge {
+      font-size: 11px; font-weight: 500;
+      padding: 3px 8px; border-radius: 10px;
+    }
+    .model-badge.installed { background: rgba(39,174,96,0.2); color: #27ae60; }
+
+    /* ボタン */
+    .btn-large {
+      width: 100%; padding: 14px;
+      border-radius: 12px; border: none;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn-large.primary { background: #10a37f; color: white; }
+    .btn-large.primary:hover { background: #0d8c6e; }
+    .btn-large.primary:disabled { background: #444; color: #9b9b9b; cursor: not-allowed; }
+    .btn-large.secondary {
+      background: transparent; color: #9b9b9b;
+      border: 1px solid #444; margin-top: 10px; font-size: 14px;
+    }
+    .btn-large.secondary:hover { color: #ececec; border-color: #9b9b9b; }
+
+    /* 完了画面 */
+    .complete-icon { font-size: 64px; text-align: center; margin-bottom: 16px; }
+    .complete-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .complete-desc { color: #9b9b9b; text-align: center; line-height: 1.7; margin-bottom: 28px; }
+
+    /* インフォボックス */
+    .info-box {
+      background: rgba(16,163,127,0.08);
+      border: 1px solid rgba(16,163,127,0.3);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #9b9b9b;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .info-box.warn {
+      background: rgba(243,156,18,0.08);
+      border-color: rgba(243,156,18,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-wrapper">
+    <!-- ロゴ -->
+    <div class="setup-logo">
+      <h1>🧠 OllamaMemoryChat</h1>
+      <p>セットアップウィザード — 数分で完了します</p>
+    </div>
+
+    <!-- ステップインジケーター -->
+    <div class="steps">
+      <div class="step-dot active" id="dot1">1</div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-dot" id="dot2">2</div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-dot" id="dot3">✓</div>
+    </div>
+
+    <!-- カード -->
+    <div class="setup-card">
+
+      <!-- STEP 1: Ollamaのインストール・起動 -->
+      <div class="step-panel active" id="step1">
+        <div class="step-title">⚙️ ステップ1: AIエンジンの準備</div>
+        <div class="step-desc">
+          OllamaMemoryChatはAI処理に「Ollama」を使います。<br>
+          Ollamaはあなたのコンピュータ内で動くAIエンジンです。<br>
+          データは外部に送信されません。
+        </div>
+
+        <div id="step1Status" class="status-badge checking">⏳ 確認中...</div>
+
+        <div class="progress-bar-wrap" id="installProgress">
+          <div class="progress-bar" id="installProgressBar"></div>
+        </div>
+        <div class="progress-text" id="installProgressText"></div>
+
+        <div class="info-box" id="installInfo" style="display:none">
+          Ollamaをインストールします。管理者権限の確認ダイアログが表示される場合があります。
+          「OK」または「許可」を押してください。
+        </div>
+
+        <button class="btn-large primary" id="step1Btn" onclick="handleStep1Action()" disabled>確認中...</button>
+        <button class="btn-large secondary" id="step1Skip" onclick="goToStep2()" style="display:none">
+          すでに別の方法でインストール済み → 次へ
+        </button>
+      </div>
+
+      <!-- STEP 2: モデルの選択・ダウンロード -->
+      <div class="step-panel" id="step2">
+        <div class="step-title">📦 ステップ2: AIモデルを選ぶ</div>
+        <div class="step-desc">
+          AIモデルを選んでダウンロードします。<br>
+          初めての方は <strong style="color:#10a37f">★おすすめ</strong> のモデルをお選びください。
+        </div>
+
+        <div id="modelGrid" class="model-grid">
+          <div style="color:#9b9b9b; font-size:14px; padding:16px; text-align:center">モデル一覧を読み込み中...</div>
+        </div>
+
+        <div class="progress-bar-wrap" id="pullProgress">
+          <div class="progress-bar" id="pullProgressBar"></div>
+        </div>
+        <div class="progress-text" id="pullProgressText"></div>
+
+        <div class="info-box warn" id="pullInfo" style="display:none">
+          ダウンロード中です。Wi-Fi接続を維持してください。<br>
+          モデルのサイズにより5〜15分かかる場合があります。
+        </div>
+
+        <button class="btn-large primary" id="step2Btn" onclick="handleStep2Action()" disabled>
+          モデルを選択してください
+        </button>
+      </div>
+
+      <!-- STEP 3: 完了 -->
+      <div class="step-panel" id="step3">
+        <div class="complete-icon">🎉</div>
+        <div class="complete-title">セットアップ完了！</div>
+        <div class="complete-desc">
+          <span id="selectedModelName">AI</span> の準備ができました。<br>
+          チャットを始めましょう。
+        </div>
+        <button class="btn-large primary" onclick="goToChat()">チャットを始める →</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://127.0.0.1:8765';
+    let currentStep = 1;
+    let selectedModel = null;
+    let pullTaskId = null;
+    let pullInterval = null;
+    let fullStatus = null;
+
+    // ===== 初期化 =====
+    window.addEventListener('DOMContentLoaded', async () => {
+      await checkInitialStatus();
+    });
+
+    async function checkInitialStatus() {
+      try {
+        const r = await fetch(`${API}/api/setup/status`);
+        fullStatus = await r.json();
+        applyStep1Status(fullStatus);
+      } catch (e) {
+        setStep1Status('ng', '❌ アプリサーバーに接続できません。アプリを再起動してください。');
+        document.getElementById('step1Btn').disabled = true;
+      }
+    }
+
+    function applyStep1Status(status) {
+      if (!status.ollama_installed) {
+        // 未インストール
+        setStep1Status('ng', '❌ Ollamaがインストールされていません');
+        document.getElementById('installInfo').style.display = '';
+        const btn = document.getElementById('step1Btn');
+        btn.textContent = 'Ollamaを自動インストール';
+        btn.disabled = false;
+        document.getElementById('step1Skip').style.display = '';
+      } else if (!status.ollama_running) {
+        // インストール済み・未起動
+        setStep1Status('warn', '⚠️ Ollamaがインストール済みですが起動していません');
+        const btn = document.getElementById('step1Btn');
+        btn.textContent = 'Ollamaを起動する';
+        btn.disabled = false;
+      } else {
+        // 起動済み
+        setStep1Status('ok', '✅ Ollamaが起動しています');
+        const btn = document.getElementById('step1Btn');
+        btn.textContent = '次へ進む →';
+        btn.disabled = false;
+      }
+    }
+
+    function setStep1Status(type, text) {
+      const el = document.getElementById('step1Status');
+      el.className = `status-badge ${type}`;
+      el.textContent = text;
+    }
+
+    // ===== STEP 1: インストール・起動 =====
+    async function handleStep1Action() {
+      if (!fullStatus) return;
+
+      if (!fullStatus.ollama_installed) {
+        await doInstall();
+      } else if (!fullStatus.ollama_running) {
+        await doStart();
+      } else {
+        goToStep2();
+      }
+    }
+
+    async function doInstall() {
+      const btn = document.getElementById('step1Btn');
+      btn.disabled = true;
+      btn.textContent = 'インストール中...';
+      document.getElementById('installProgress').classList.add('visible');
+      document.getElementById('installProgressBar').style.width = '20%';
+      setStep1Status('warn', '⏳ Ollamaをインストールしています...');
+      document.getElementById('installProgressText').textContent = '数分かかる場合があります。このままお待ちください。';
+
+      try {
+        const r = await fetch(`${API}/api/setup/install`, { method: 'POST' });
+        const data = await r.json();
+        document.getElementById('installProgressBar').style.width = '90%';
+
+        if (data.success) {
+          document.getElementById('installProgressBar').style.width = '100%';
+          setStep1Status('ok', '✅ Ollamaのインストールが完了しました');
+          document.getElementById('installProgressText').textContent = 'インストール完了。次はサービスを起動します...';
+          // インストール後に自動で起動
+          await doStart();
+        } else {
+          setStep1Status('ng', '❌ インストールに失敗しました');
+          document.getElementById('installProgressText').textContent = data.message || 'エラーが発生しました';
+          btn.textContent = '再試行';
+          btn.disabled = false;
+        }
+      } catch (e) {
+        setStep1Status('ng', '❌ エラーが発生しました');
+        btn.textContent = '再試行';
+        btn.disabled = false;
+      }
+    }
+
+    async function doStart() {
+      const btn = document.getElementById('step1Btn');
+      btn.disabled = true;
+      btn.textContent = '起動中...';
+      document.getElementById('installProgress').classList.add('visible');
+      document.getElementById('installProgressBar').style.width = '50%';
+      setStep1Status('warn', '⏳ Ollamaを起動しています...');
+      document.getElementById('installProgressText').textContent = '少しお待ちください...';
+
+      try {
+        const r = await fetch(`${API}/api/setup/start`, { method: 'POST' });
+        const data = await r.json();
+
+        if (data.success) {
+          document.getElementById('installProgressBar').style.width = '100%';
+          setStep1Status('ok', '✅ Ollamaが起動しました');
+          document.getElementById('installProgressText').textContent = '起動完了！';
+          setTimeout(goToStep2, 1000);
+        } else {
+          setStep1Status('ng', '❌ 起動に失敗しました');
+          document.getElementById('installProgressText').textContent = data.message || 'エラーが発生しました';
+          btn.textContent = '再試行';
+          btn.disabled = false;
+        }
+      } catch (e) {
+        setStep1Status('ng', '❌ エラーが発生しました');
+        btn.textContent = '再試行';
+        btn.disabled = false;
+      }
+    }
+
+    // ===== STEP 2: モデル選択・ダウンロード =====
+    async function goToStep2() {
+      setStep(2);
+      await loadModels();
+    }
+
+    async function loadModels() {
+      try {
+        const r = await fetch(`${API}/api/setup/models`);
+        const data = await r.json();
+        renderModels(data.recommended, data.installed);
+      } catch (e) {
+        document.getElementById('modelGrid').innerHTML =
+          '<div style="color:#e74c3c; padding:16px; text-align:center">モデル一覧の取得に失敗しました</div>';
+      }
+    }
+
+    function renderModels(recommended, installed) {
+      const installedNames = new Set(installed.map(m => m.name));
+      const grid = document.getElementById('modelGrid');
+
+      // インストール済みモデルを先頭に表示
+      let html = '';
+      if (installed.length > 0) {
+        html += `<div style="font-size:12px;color:#9b9b9b;margin-bottom:6px;font-weight:600;">✅ インストール済み（クリックして選択）</div>`;
+        installed.forEach(m => {
+          html += `
+            <div class="model-card installed-badge" data-model="${m.name}" onclick="selectModel('${m.name}', this)">
+              <div class="model-info">
+                <div class="model-name">${m.name}</div>
+                <div class="model-desc">インストール済み・すぐに使えます</div>
+              </div>
+              <div class="model-size">
+                <span class="model-badge installed">使用可能</span>
+              </div>
+            </div>`;
+        });
+        html += `<div style="font-size:12px;color:#9b9b9b;margin:10px 0 6px;font-weight:600;">おすすめモデル（ダウンロードが必要）</div>`;
+      }
+
+      recommended.forEach(m => {
+        if (installedNames.has(m.name)) return; // 既にインストール済みは上に表示済み
+        const tags = (m.tags || []).map(t => `<span class="model-tag">${t}</span>`).join('');
+        html += `
+          <div class="model-card" data-model="${m.name}" onclick="selectModel('${m.name}', this)">
+            <div class="model-info">
+              <div class="model-name">${m.display_name || m.name}</div>
+              <div class="model-desc">${m.description || ''}</div>
+              <div class="model-tags">${tags}</div>
+            </div>
+            <div class="model-size">
+              <div class="model-size-num">${m.size_gb}GB</div>
+              <div style="font-size:11px;color:#9b9b9b;margin-top:2px;">ダウンロード</div>
+            </div>
+          </div>`;
+      });
+
+      grid.innerHTML = html;
+    }
+
+    function selectModel(name, el) {
+      document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedModel = name;
+
+      const installedNames = new Set(
+        Array.from(document.querySelectorAll('.model-card.installed-badge'))
+          .map(c => c.dataset.model)
+      );
+
+      const btn = document.getElementById('step2Btn');
+      if (installedNames.has(name)) {
+        btn.textContent = `「${name}」を使う →`;
+      } else {
+        btn.textContent = `「${name}」をダウンロードして使う`;
+      }
+      btn.disabled = false;
+    }
+
+    async function handleStep2Action() {
+      if (!selectedModel) return;
+
+      const installedNames = new Set(
+        Array.from(document.querySelectorAll('.model-card.installed-badge'))
+          .map(c => c.dataset.model)
+      );
+
+      if (installedNames.has(selectedModel)) {
+        // インストール済み → 設定に保存してStep3へ
+        await saveModelSelection(selectedModel);
+        goToStep3();
+        return;
+      }
+
+      // ダウンロードが必要
+      await startModelDownload(selectedModel);
+    }
+
+    async function startModelDownload(modelName) {
+      const btn = document.getElementById('step2Btn');
+      btn.disabled = true;
+      btn.textContent = 'ダウンロード中...';
+      document.getElementById('pullProgress').classList.add('visible');
+      document.getElementById('pullInfo').style.display = '';
+      document.getElementById('pullProgressText').textContent = `${modelName} のダウンロードを開始しています...`;
+
+      try {
+        const r = await fetch(`${API}/api/setup/pull/${encodeURIComponent(modelName)}`, { method: 'POST' });
+        const data = await r.json();
+        pullTaskId = data.task_id;
+        startPollProgress();
+      } catch (e) {
+        document.getElementById('pullProgressText').textContent = 'ダウンロードの開始に失敗しました';
+        btn.disabled = false;
+      }
+    }
+
+    function startPollProgress() {
+      if (pullInterval) clearInterval(pullInterval);
+      pullInterval = setInterval(async () => {
+        if (!pullTaskId) return;
+        try {
+          const r = await fetch(`${API}/api/setup/pull/progress/${pullTaskId}`);
+          const data = await r.json();
+
+          document.getElementById('pullProgressText').textContent = data.status || '';
+          if (data.percent !== undefined) {
+            document.getElementById('pullProgressBar').style.width = `${data.percent}%`;
+          }
+
+          if (data.error) {
+            clearInterval(pullInterval);
+            document.getElementById('pullProgressText').textContent = `❌ エラー: ${data.error}`;
+            const btn = document.getElementById('step2Btn');
+            btn.textContent = '再試行';
+            btn.disabled = false;
+          } else if (data.done) {
+            clearInterval(pullInterval);
+            document.getElementById('pullProgressBar').style.width = '100%';
+            document.getElementById('pullProgressText').textContent = 'ダウンロード完了！';
+            await saveModelSelection(selectedModel);
+            setTimeout(goToStep3, 1000);
+          }
+        } catch (e) {}
+      }, 1000);
+    }
+
+    async function saveModelSelection(modelName) {
+      await fetch(`${API}/api/setup/select-model`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: modelName })
+      });
+    }
+
+    // ===== STEP 3: 完了 =====
+    function goToStep3() {
+      document.getElementById('selectedModelName').textContent = selectedModel || 'AI';
+      setStep(3);
+    }
+
+    function goToChat() {
+      window.location.href = '/';
+    }
+
+    // ===== ナビゲーション =====
+    function setStep(n) {
+      currentStep = n;
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`step${n}`).classList.add('active');
+
+      // ステップドットを更新
+      for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById(`dot${i}`);
+        dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+        if (i <= 2) {
+          const line = document.getElementById(`line${i}`);
+          line.className = 'step-line' + (i < n ? ' done' : '');
+        }
+      }
+    }
+  </script>
+</body>
+</html>

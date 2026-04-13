@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定 — OllamaMemoryChat</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>🧠 OllamaMemoryChat</h1>
+      <div class="version">v0.1.0-beta</div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        チャット
+      </a>
+      <a href="/settings" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        設定・コマンド管理
+      </a>
+    </nav>
+    <div class="status-indicator">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText" class="status-text">確認中...</span>
+    </div>
+  </aside>
+
+  <!-- メインエリア -->
+  <main class="main" style="overflow-y: auto;">
+    <div class="settings-container">
+      <h2 style="font-size:22px; margin-bottom:24px; font-weight:600;">⚙️ 設定・コマンド管理</h2>
+
+      <!-- AIエンジン設定 -->
+      <div class="settings-section">
+        <div class="settings-section-header">🤖 AIエンジン設定</div>
+
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">エンジン</div>
+            <div class="settings-sublabel">使用するAIを選択</div>
+          </div>
+          <select id="engineSelect" class="settings-input" onchange="onEngineChange()">
+            <option value="ollama">Ollama（ローカル）</option>
+            <option value="openai_compatible">OpenAI互換API（クラウド）</option>
+          </select>
+        </div>
+
+        <!-- Ollama設定 -->
+        <div id="ollamaSettings">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">OllamaエンドポイントURL</div>
+              <div class="settings-sublabel">通常は変更不要</div>
+            </div>
+            <input type="text" id="ollamaEndpoint" class="settings-input" placeholder="http://localhost:11434">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">モデル名</div>
+              <div class="settings-sublabel">例: gemma3:4b, llama3:8b</div>
+            </div>
+            <input type="text" id="ollamaModel" class="settings-input" placeholder="gemma3:4b">
+          </div>
+        </div>
+
+        <!-- OpenAI互換API設定 -->
+        <div id="openaiSettings" style="display:none;">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">API エンドポイントURL</div>
+              <div class="settings-sublabel">例: https://api.openai.com/v1</div>
+            </div>
+            <input type="text" id="openaiEndpoint" class="settings-input" placeholder="https://api.openai.com/v1">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">モデル名</div>
+              <div class="settings-sublabel">例: gpt-4o, claude-3-opus</div>
+            </div>
+            <input type="text" id="openaiModel" class="settings-input" placeholder="gpt-4o">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">APIキー</div>
+              <div class="settings-sublabel">ローカルに保存・外部送信なし</div>
+            </div>
+            <input type="password" id="openaiApiKey" class="settings-input" placeholder="sk-...">
+          </div>
+        </div>
+
+        <div class="settings-row" style="justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="saveAISettings()">保存する</button>
+        </div>
+      </div>
+
+      <!-- 記憶設定 -->
+      <div class="settings-section">
+        <div class="settings-section-header">🧠 記憶設定</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">記憶圧縮タイミング</div>
+            <div class="settings-sublabel">何往復ごとに会話を要約・圧縮するか</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="number" id="compressionThreshold" class="settings-input" style="width:80px;" min="5" max="50" value="10">
+            <span style="color:var(--text-secondary); font-size:14px;">往復</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">記憶をすべて削除</div>
+            <div class="settings-sublabel">会話履歴とすべてのサマリーを削除します</div>
+          </div>
+          <button class="btn btn-danger" onclick="clearAllMemory()">すべて削除</button>
+        </div>
+      </div>
+
+      <!-- Ollamaモデル管理 -->
+      <div class="settings-section" id="ollamaModelSection">
+        <div class="settings-section-header">📦 Ollamaモデル管理</div>
+        <div id="ollamaModelList" style="padding:8px;">
+          <div style="padding:12px;color:var(--text-secondary);font-size:14px;">読み込み中...</div>
+        </div>
+        <div class="settings-row" style="justify-content:space-between;">
+          <div>
+            <div class="settings-label">モデルを追加</div>
+            <div class="settings-sublabel">モデル名を入力（例: llama3.2:3b）</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="addModelInput" class="settings-input" style="width:180px;" placeholder="gemma3:4b">
+            <button class="btn btn-primary" onclick="addModel()">追加</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- コマンド管理 -->
+      <div class="settings-section">
+        <div class="settings-section-header">⚡ コマンド管理</div>
+
+        <!-- コマンドリスト -->
+        <div id="commandList" class="command-list">
+          <div style="padding:16px; color:var(--text-secondary); font-size:14px;">読み込み中...</div>
+        </div>
+
+        <!-- コマンド追加フォーム -->
+        <div class="add-command-form">
+          <div style="font-size:14px; font-weight:600; margin-bottom:12px; color:var(--text-primary);">＋ 新しいコマンドを追加</div>
+          <div class="form-row">
+            <label>コマンド名</label>
+            <input type="text" id="newCmdName" class="form-input" placeholder="例: summarize（/は不要）">
+          </div>
+          <div class="form-row">
+            <label>説明</label>
+            <input type="text" id="newCmdDesc" class="form-input" placeholder="例: 入力した文章を3行で要約して">
+          </div>
+          <div style="text-align:right;">
+            <button class="btn btn-primary" onclick="addCommand()">追加する</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- アプリ情報 -->
+      <div class="settings-section">
+        <div class="settings-section-header">ℹ️ アプリ情報</div>
+        <div class="settings-row">
+          <div class="settings-label">バージョン</div>
+          <div style="color:var(--text-secondary); font-size:14px;">v0.1.0-beta</div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">プライバシー</div>
+            <div class="settings-sublabel">すべてのデータはあなたのMac内にのみ保存されます</div>
+          </div>
+          <div style="color:var(--success); font-size:13px;">🔒 完全ローカル</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/assets/app.js"></script>
+  <script>
+    const API_BASE = 'http://127.0.0.1:8765';
+
+    // 設定画面の初期化
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadSettings();
+      await loadCommands();
+      await loadOllamaModels();
+      checkStatus();
+    });
+
+    function onEngineChange() {
+      const engine = document.getElementById('engineSelect').value;
+      document.getElementById('ollamaSettings').style.display = engine === 'ollama' ? '' : 'none';
+      document.getElementById('openaiSettings').style.display = engine === 'openai_compatible' ? '' : 'none';
+    }
+
+    async function loadSettings() {
+      try {
+        const config = await apiRequest('GET', '/api/settings');
+        const ai = config.ai || {};
+        document.getElementById('engineSelect').value = ai.engine || 'ollama';
+        document.getElementById('ollamaEndpoint').value = ai.ollama_endpoint || '';
+        document.getElementById('ollamaModel').value = ai.ollama_model || '';
+        document.getElementById('openaiEndpoint').value = ai.openai_endpoint || '';
+        document.getElementById('openaiModel').value = ai.openai_model || '';
+        document.getElementById('compressionThreshold').value = config.memory?.compression_threshold || 10;
+        onEngineChange();
+      } catch (e) {
+        showToast('設定の読み込みに失敗しました', 'error');
+      }
+    }
+
+    async function saveAISettings() {
+      const engine = document.getElementById('engineSelect').value;
+      const apiKey = document.getElementById('openaiApiKey').value;
+
+      try {
+        await apiRequest('POST', '/api/settings/ai', {
+          engine,
+          ollama_endpoint: document.getElementById('ollamaEndpoint').value,
+          ollama_model: document.getElementById('ollamaModel').value,
+          openai_endpoint: document.getElementById('openaiEndpoint').value,
+          openai_model: document.getElementById('openaiModel').value,
+          openai_api_key: apiKey || undefined,
+        });
+        showToast('✅ 設定を保存しました');
+        document.getElementById('openaiApiKey').value = '';
+      } catch (e) {
+        showToast('❌ 保存に失敗しました: ' + e.message, 'error');
+      }
+    }
+
+    async function clearAllMemory() {
+      if (!confirm('すべての記憶と会話履歴を削除しますか？この操作は元に戻せません。')) return;
+      try {
+        await apiRequest('DELETE', `/api/memory/default`);
+        showToast('✅ 記憶をすべて削除しました');
+      } catch (e) {
+        showToast('❌ 削除に失敗しました', 'error');
+      }
+    }
+
+    async function loadCommands() {
+      try {
+        const data = await apiRequest('GET', '/api/commands');
+        renderCommandList(data.commands || []);
+      } catch (e) {
+        document.getElementById('commandList').innerHTML = '<div style="padding:16px; color:var(--danger);">コマンドの読み込みに失敗しました</div>';
+      }
+    }
+
+    function renderCommandList(commands) {
+      const list = document.getElementById('commandList');
+      if (commands.length === 0) {
+        list.innerHTML = '<div style="padding:16px; color:var(--text-secondary); font-size:14px;">コマンドがありません</div>';
+        return;
+      }
+      list.innerHTML = commands.map(cmd => `
+        <div class="command-item">
+          <div class="cmd-info">
+            <div class="cmd-name">/${cmd.name}</div>
+            <div class="cmd-desc">${cmd.description}</div>
+          </div>
+          <span class="cmd-source">${cmd.source === 'builtin' ? '組み込み' : 'カスタム'}</span>
+          ${cmd.source === 'user' ? `
+            <div class="cmd-actions">
+              <button class="cmd-action-btn delete" onclick="deleteCommand('${cmd.name}')" title="削除">🗑</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function addCommand() {
+      const name = document.getElementById('newCmdName').value.trim();
+      const desc = document.getElementById('newCmdDesc').value.trim();
+
+      if (!name || !desc) {
+        showToast('コマンド名と説明を入力してください', 'error');
+        return;
+      }
+
+      try {
+        await apiRequest('POST', '/api/commands', { name, description: desc });
+        showToast(`✅ /${name.replace('/', '')} を追加しました`);
+        document.getElementById('newCmdName').value = '';
+        document.getElementById('newCmdDesc').value = '';
+        await loadCommands();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    async function deleteCommand(name) {
+      if (!confirm(`コマンド /${name} を削除しますか？`)) return;
+      try {
+        await apiRequest('DELETE', `/api/commands/${name}`);
+        showToast(`✅ /${name} を削除しました`);
+        await loadCommands();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    // モデル管理
+    async function loadOllamaModels() {
+      try {
+        const r = await fetch(`${API_BASE}/api/setup/models`);
+        const data = await r.json();
+        renderOllamaModels(data.installed || []);
+      } catch (e) {
+        document.getElementById('ollamaModelList').innerHTML =
+          '<div style="padding:12px;color:var(--text-secondary);font-size:13px;">Ollamaが起動していません</div>';
+      }
+    }
+
+    function renderOllamaModels(models) {
+      const list = document.getElementById('ollamaModelList');
+      if (models.length === 0) {
+        list.innerHTML = '<div style="padding:12px;color:var(--text-secondary);font-size:13px;">インストール済みモデルがありません</div>';
+        return;
+      }
+      list.innerHTML = models.map(m => `
+        <div class="command-item">
+          <div class="cmd-info">
+            <div class="cmd-name" style="color:var(--text-primary)">${m.name}</div>
+            <div class="cmd-desc">${m.size_gb} GB · ${m.modified || ''}</div>
+          </div>
+          <button class="btn btn-secondary" onclick="useModel('${m.name}')">使う</button>
+          <button class="cmd-action-btn delete" onclick="removeModel('${m.name}')" title="削除">🗑</button>
+        </div>
+      `).join('');
+    }
+
+    async function useModel(name) {
+      try {
+        await apiRequest('POST', '/api/setup/select-model', { model: name });
+        showToast(`✅ モデルを ${name} に変更しました`);
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    async function addModel() {
+      const name = document.getElementById('addModelInput').value.trim();
+      if (!name) return;
+      showToast(`⏳ ${name} のダウンロードを開始しました...`);
+      try {
+        await apiRequest('POST', `/api/setup/pull/${encodeURIComponent(name)}`, {});
+        document.getElementById('addModelInput').value = '';
+        showToast('ダウンロードが開始されました。数分後に再読み込みしてください。');
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    async function removeModel(name) {
+      if (!confirm(`モデル「${name}」を削除しますか？`)) return;
+      try {
+        await apiRequest('DELETE', `/api/setup/models/${encodeURIComponent(name)}`);
+        showToast(`✅ ${name} を削除しました`);
+        await loadOllamaModels();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
