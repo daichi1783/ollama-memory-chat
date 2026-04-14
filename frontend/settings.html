@@ -65,10 +65,15 @@
           </div>
           <div class="settings-row">
             <div>
-              <div class="settings-label">モデル名</div>
-              <div class="settings-sublabel">例: gemma3:4b, llama3:8b</div>
+              <div class="settings-label">使用モデル</div>
+              <div class="settings-sublabel">インストール済みのモデルから選択</div>
             </div>
-            <input type="text" id="ollamaModel" class="settings-input" placeholder="gemma3:4b">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select id="ollamaModel" class="settings-input" style="min-width:180px;">
+                <option value="">読み込み中...</option>
+              </select>
+              <button class="btn btn-secondary" onclick="refreshModelDropdown()" title="一覧を更新" style="padding:8px 12px;">🔄</button>
+            </div>
           </div>
         </div>
 
@@ -207,17 +212,62 @@
       document.getElementById('openaiSettings').style.display = engine === 'openai_compatible' ? '' : 'none';
     }
 
+    // インストール済みモデルをドロップダウンに反映
+    async function populateModelDropdown(currentModel) {
+      const sel = document.getElementById('ollamaModel');
+      if (!sel) return;
+      try {
+        const r = await fetch(`${API_BASE}/api/setup/models`);
+        const data = await r.json();
+        const models = data.installed || [];
+
+        sel.innerHTML = '';
+        if (models.length === 0) {
+          sel.innerHTML = '<option value="">インストール済みモデルなし</option>';
+        } else {
+          models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.name;
+            opt.textContent = `${m.name}  (${m.size_gb} GB)`;
+            sel.appendChild(opt);
+          });
+          // 現在の設定値を選択（なければ先頭）
+          if (currentModel && models.some(m => m.name === currentModel)) {
+            sel.value = currentModel;
+          } else if (currentModel) {
+            // 設定されているモデルが一覧にない場合: 先頭に追加してハイライト
+            const opt = document.createElement('option');
+            opt.value = currentModel;
+            opt.textContent = `⚠️ ${currentModel}（未インストール）`;
+            opt.style.color = '#f39c12';
+            sel.insertBefore(opt, sel.firstChild);
+            sel.value = currentModel;
+          }
+        }
+      } catch (e) {
+        sel.innerHTML = `<option value="${currentModel || ''}">${currentModel || 'Ollamaが起動していません'}</option>`;
+      }
+    }
+
+    async function refreshModelDropdown() {
+      const currentModel = document.getElementById('ollamaModel').value;
+      await populateModelDropdown(currentModel);
+      showToast('モデル一覧を更新しました');
+    }
+
     async function loadSettings() {
       try {
         const config = await apiRequest('GET', '/api/settings');
         const ai = config.ai || {};
         document.getElementById('engineSelect').value = ai.engine || 'ollama';
         document.getElementById('ollamaEndpoint').value = ai.ollama_endpoint || '';
-        document.getElementById('ollamaModel').value = ai.ollama_model || '';
+        // モデルはドロップダウン読み込み後に反映
         document.getElementById('openaiEndpoint').value = ai.openai_endpoint || '';
         document.getElementById('openaiModel').value = ai.openai_model || '';
         document.getElementById('compressionThreshold').value = config.memory?.compression_threshold || 10;
         onEngineChange();
+        // Ollamaドロップダウンを初期化
+        await populateModelDropdown(ai.ollama_model || '');
       } catch (e) {
         showToast('設定の読み込みに失敗しました', 'error');
       }
@@ -321,6 +371,9 @@
         const r = await fetch(`${API_BASE}/api/setup/models`);
         const data = await r.json();
         renderOllamaModels(data.installed || []);
+        // ドロップダウンも更新
+        const currentModel = document.getElementById('ollamaModel')?.value || '';
+        await populateModelDropdown(currentModel);
       } catch (e) {
         document.getElementById('ollamaModelList').innerHTML =
           '<div style="padding:12px;color:var(--text-secondary);font-size:13px;">Ollamaが起動していません</div>';
@@ -372,7 +425,7 @@
       try {
         await apiRequest('DELETE', `/api/setup/models/${encodeURIComponent(name)}`);
         showToast(`✅ ${name} を削除しました`);
-        await loadOllamaModels();
+        await loadOllamaModels(); // refreshes both list and dropdown
       } catch (e) {
         showToast('❌ ' + e.message, 'error');
       }

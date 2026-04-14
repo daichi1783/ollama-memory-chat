@@ -139,6 +139,91 @@ body {
 
 .settings-link { margin-top: 4px; }
 
+/* モデルミスマッチアラートバナー */
+.model-mismatch-alert {
+  background: linear-gradient(135deg, #3d2800 0%, #2d1a00 100%);
+  border-bottom: 1px solid #f39c12;
+  padding: 12px 20px;
+  flex-shrink: 0;
+  animation: slideDown 0.3s ease;
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.model-mismatch-alert .alert-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.model-mismatch-alert .alert-icon { font-size: 20px; flex-shrink: 0; }
+.model-mismatch-alert .alert-text {
+  flex: 1;
+  font-size: 14px;
+  color: #ffd080;
+}
+.model-mismatch-alert .alert-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.model-mismatch-alert .alert-text span {
+  font-size: 12px;
+  color: #ffb84d;
+}
+.model-mismatch-alert .alert-progress {
+  font-size: 12px;
+  color: #ffd080;
+  margin-top: 4px;
+  display: none;
+}
+.model-mismatch-alert .alert-progress.visible { display: block; }
+.model-mismatch-alert .alert-progress-bar-wrap {
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+  display: none;
+}
+.model-mismatch-alert .alert-progress-bar-wrap.visible { display: block; }
+.model-mismatch-alert .alert-progress-bar {
+  height: 100%;
+  background: #f39c12;
+  width: 0%;
+  transition: width 0.4s ease;
+  border-radius: 2px;
+}
+.model-mismatch-alert .alert-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.alert-install-btn {
+  background: #f39c12;
+  color: #1a0d00;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.alert-install-btn:hover { background: #e67e22; }
+.alert-install-btn:disabled { background: #8a6020; color: #ccc; cursor: not-allowed; }
+.alert-close-btn {
+  background: none;
+  border: none;
+  color: #ffb84d;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.alert-close-btn:hover { background: rgba(255,184,77,0.15); }
+
 .status-indicator {
   padding: 12px 16px;
   border-top: 1px solid var(--border);

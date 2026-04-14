@@ -5,6 +5,8 @@ const API_BASE = 'http://127.0.0.1:8765';
 let commandNames = [];
 let isLoading = false;
 let currentSessionId = null;
+let _mismatchedModelName = null;
+let _pullPollInterval = null;
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,6 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCommandNames();
   await loadSessions();
   setupInputHandlers();
+  // モデルミスマッチ確認（少し遅延してAPIが確実に起動してから）
+  setTimeout(checkModelMismatch, 1500);
   setInterval(checkStatus, 30000); // 30秒ごとにステータス確認
 });
 
@@ -449,6 +453,110 @@ async function deleteSession(sessionId, e) {
     showToast('セッションを削除しました', 'success');
   } catch (e) {
     showToast(`削除エラー: ${e.message}`, 'error');
+  }
+}
+
+// ===== モデルミスマッチ検出・インストール =====
+
+async function checkModelMismatch() {
+  try {
+    const [settings, modelsResp] = await Promise.all([
+      apiRequest('GET', '/api/settings'),
+      fetch(`${API_BASE}/api/setup/models`)
+    ]);
+    if (!modelsResp.ok) return;
+    const modelsData = await modelsResp.json();
+
+    const engine = settings.ai?.engine || 'ollama';
+    if (engine !== 'ollama') return; // Ollama以外はチェック不要
+
+    const configuredModel = settings.ai?.ollama_model;
+    if (!configuredModel) return;
+
+    const installedNames = (modelsData.installed || []).map(m => m.name);
+    if (installedNames.length === 0) return; // Ollama未起動 or モデルなし → セットアップ画面で対処
+
+    if (!installedNames.includes(configuredModel)) {
+      _mismatchedModelName = configuredModel;
+      showModelMismatchAlert(configuredModel);
+    } else {
+      hideModelMismatchAlert();
+    }
+  } catch (e) {
+    // Ollama未起動 or API起動前 → 無視
+  }
+}
+
+function showModelMismatchAlert(modelName) {
+  const alert = document.getElementById('modelMismatchAlert');
+  const nameSpan = document.getElementById('alertModelName');
+  if (!alert || !nameSpan) return;
+  nameSpan.textContent = `「${modelName}」がインストールされていません`;
+  alert.style.display = '';
+  // ボタンをリセット
+  const btn = document.getElementById('alertInstallBtn');
+  if (btn) { btn.disabled = false; btn.textContent = '今すぐインストール'; }
+  document.getElementById('alertProgress').classList.remove('visible');
+  document.getElementById('alertProgressBarWrap').classList.remove('visible');
+  document.getElementById('alertProgressBar').style.width = '0%';
+}
+
+function hideModelMismatchAlert() {
+  const alert = document.getElementById('modelMismatchAlert');
+  if (alert) alert.style.display = 'none';
+  if (_pullPollInterval) { clearInterval(_pullPollInterval); _pullPollInterval = null; }
+}
+
+async function installConfiguredModel() {
+  if (!_mismatchedModelName) return;
+  const modelName = _mismatchedModelName;
+
+  const btn = document.getElementById('alertInstallBtn');
+  const progress = document.getElementById('alertProgress');
+  const barWrap = document.getElementById('alertProgressBarWrap');
+  const bar = document.getElementById('alertProgressBar');
+
+  btn.disabled = true;
+  btn.textContent = 'インストール中...';
+  progress.textContent = `${modelName} のダウンロードを開始しています...`;
+  progress.classList.add('visible');
+  barWrap.classList.add('visible');
+  bar.style.width = '0%';
+
+  try {
+    const r = await fetch(`${API_BASE}/api/setup/pull/${encodeURIComponent(modelName)}`, { method: 'POST' });
+    if (!r.ok) throw new Error('インストール開始に失敗しました');
+    const data = await r.json();
+    const taskId = data.task_id;
+    if (!taskId) throw new Error('タスクIDが取得できませんでした');
+
+    // 進捗をポーリング
+    if (_pullPollInterval) clearInterval(_pullPollInterval);
+    _pullPollInterval = setInterval(async () => {
+      try {
+        const pr = await fetch(`${API_BASE}/api/setup/pull/progress/${taskId}`);
+        const pd = await pr.json();
+        if (pd.status) progress.textContent = pd.status;
+        if (pd.percent != null) bar.style.width = `${pd.percent}%`;
+
+        if (pd.error) {
+          clearInterval(_pullPollInterval); _pullPollInterval = null;
+          progress.textContent = `❌ エラー: ${pd.error}`;
+          btn.disabled = false; btn.textContent = '再試行';
+        } else if (pd.done || pd.percent >= 100) {
+          clearInterval(_pullPollInterval); _pullPollInterval = null;
+          bar.style.width = '100%';
+          progress.textContent = '✅ インストール完了！';
+          btn.textContent = '完了';
+          _mismatchedModelName = null;
+          // 2秒後にアラートを閉じる
+          setTimeout(() => hideModelMismatchAlert(), 2000);
+        }
+      } catch (e) { /* ポーリング中のエラーは無視 */ }
+    }, 1500);
+  } catch (e) {
+    progress.textContent = `❌ ${e.message}`;
+    btn.disabled = false; btn.textContent = '再試行';
   }
 }
 

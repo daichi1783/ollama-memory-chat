@@ -32,6 +32,25 @@
 
   <!-- メインエリア -->
   <main class="main">
+    <!-- モデルミスマッチアラートバナー -->
+    <div id="modelMismatchAlert" class="model-mismatch-alert" style="display:none;">
+      <div class="alert-inner">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-text">
+          <strong>設定されたモデルがインストールされていません</strong>
+          <span id="alertModelName"></span>
+          <div class="alert-progress" id="alertProgress"></div>
+          <div class="alert-progress-bar-wrap" id="alertProgressBarWrap">
+            <div class="alert-progress-bar" id="alertProgressBar"></div>
+          </div>
+        </div>
+        <div class="alert-actions">
+          <button class="alert-install-btn" id="alertInstallBtn" onclick="installConfiguredModel()">今すぐインストール</button>
+          <button class="alert-close-btn" onclick="hideModelMismatchAlert()" title="閉じる">×</button>
+        </div>
+      </div>
+    </div>
+
     <!-- チャットメッセージ -->
     <div id="chatMessages" class="chat-container"></div>
 
