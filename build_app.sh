@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================
-# OllamaMemoryChat ビルドスクリプト
+# Memoria ビルドスクリプト
 # 実行すると dist/OllamaMemoryChat-x.x.x.dmg が生成されます
 # 使い方: bash build_app.sh
 # =============================================================
 set -e
 cd "$(dirname "$0")"
 
-APP_NAME="OllamaMemoryChat"
+APP_NAME="Memoria"
 VERSION="0.1.0"
 DMG_FILE="dist/${APP_NAME}-${VERSION}.dmg"
 
@@ -74,7 +74,7 @@ echo "【3/5】アプリをビルド中（3〜10分かかります）..."
 # 古いビルドを削除
 rm -rf dist/ build/ 2>/dev/null || true
 
-$VENV_PYTHON -m PyInstaller OllamaMemoryChat.spec --noconfirm --clean 2>&1 | \
+$VENV_PYTHON -m PyInstaller Memoria.spec --noconfirm --clean 2>&1 | \
   grep -E "^(INFO|WARNING|ERROR|Building|Copying|Appending|✅|❌)" || true
 
 if [ ! -d "dist/${APP_NAME}.app" ]; then
@@ -131,6 +131,6 @@ echo "  $(pwd)/$DMG_FILE"
 echo ""
 echo "インストール方法:"
 echo "  1. ${APP_NAME}-${VERSION}.dmg を開く"
-echo "  2. OllamaMemoryChat を Applications にドラッグ"
+echo "  2. Memoria を Applications にドラッグ"
 echo "  3. アプリをダブルクリックして起動"
 echo "============================================"

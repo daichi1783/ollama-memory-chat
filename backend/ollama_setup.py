@@ -119,7 +119,7 @@ def install_ollama_binary(progress_callback: Optional[Callable] = None) -> dict:
     # GitHub releases から最新バイナリURLを取得
     try:
         api_url = "https://api.github.com/repos/ollama/ollama/releases/latest"
-        req = urllib.request.Request(api_url, headers={"User-Agent": "OllamaMemoryChat"})
+        req = urllib.request.Request(api_url, headers={"User-Agent": "Memoria/1.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             release_info = json.loads(resp.read())
 

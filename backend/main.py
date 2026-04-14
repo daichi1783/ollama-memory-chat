@@ -1,5 +1,5 @@
 """
-OllamaMemoryChat FastAPIバックエンド
+Memoria FastAPIバックエンド
 全APIエンドポイントを定義する
 """
 import sys
@@ -40,7 +40,7 @@ def _config_path() -> Path:
     return user_cfg if user_cfg.exists() else _base / "config.yaml"
 
 app = FastAPI(
-    title="OllamaMemoryChat API",
+    title="Memoria API",
     version="0.1.0",
     openapi_url=None,  # OpenAPI/SwaggerUIを無効化（公開不要）
     docs_url=None,
@@ -157,7 +157,7 @@ async def chat_endpoint(req: ChatRequest):
             if not summaries:
                 return ChatResponse(reply="📭 まだ記憶サマリーがありません。会話を続けると自動的に記憶が作成されます。", command_used="memory")
             latest = summaries[0]
-            reply = f"🧠 **最新の記憶サマリー**（{latest['created_at'][:10]}更新）\n\n{latest['summary']}"
+            reply = f"💾 **最新の記憶サマリー**（{latest['created_at'][:10]}更新）\n\n{latest['summary']}"
             return ChatResponse(reply=reply, command_used="memory")
 
         if command_name == "help":
@@ -215,23 +215,23 @@ async def chat_endpoint(req: ChatRequest):
         return ChatResponse(reply=reply, memory_compressed=memory_compressed)
 
     except ValueError as e:
+        # APIキー未設定・APIエラーなど（すでにわかりやすいメッセージ）
         raise HTTPException(status_code=400, detail=str(e))
     except oc.ResponseError as e:
-        # Ollama モデルが見つからないエラー
         import logging
         logging.error(f"Ollama model error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"モデルが見つかりません。設定画面でモデルを確認してください。")
+        raise HTTPException(status_code=400, detail="🔍 指定されたモデルが見つかりません。設定画面でモデルを確認してください。")
     except (ConnectionRefusedError, Exception) as e:
-        # Ollama 接続エラー
-        error_type_name = type(e).__name__
         import logging
-        logging.error(f"Chat error ({error_type_name}): {str(e)}")
+        error_type_name = type(e).__name__
+        err_str = str(e)
+        logging.error(f"Chat error ({error_type_name}): {err_str}")
 
-        # URLError、接続エラーの判定
-        if "Connection refused" in str(e) or "ConnectionRefused" in error_type_name or "URLError" in error_type_name:
-            raise HTTPException(status_code=500, detail="Ollamaに接続できません。Ollamaが起動しているか確認してください。")
-        else:
-            raise HTTPException(status_code=500, detail=f"エラーが発生しました: {error_type_name}")
+        if "Connection refused" in err_str or "ConnectionRefused" in error_type_name or "URLError" in error_type_name:
+            raise HTTPException(status_code=500, detail="📡 Ollamaに接続できません。Ollamaが起動しているか確認してください。")
+        if "timeout" in err_str.lower() or "Timeout" in error_type_name:
+            raise HTTPException(status_code=500, detail="⏰ AIの応答がタイムアウトしました。しばらく待ってから再試行してください。")
+        raise HTTPException(status_code=500, detail=f"❌ 予期しないエラーが発生しました ({error_type_name})")
 
 # ===== セッション管理API =====
 

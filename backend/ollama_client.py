@@ -3,12 +3,6 @@ import os
 import requests
 from pathlib import Path
 
-# PyInstallerバンドル対応: OMCHAT_BASE_DIR 環境変数を優先
-_base = Path(os.environ.get('OMCHAT_BASE_DIR', str(Path(__file__).parent.parent)))
-_data = Path(os.environ.get('OMCHAT_DATA_DIR', str(_base / 'data')))
-# ユーザー設定 > バンドルデフォルト の順で読む
-CONFIG_PATH = (_data / "config.yaml") if (_data / "config.yaml").exists() else (_base / "config.yaml")
-
 # Ollama ResponseError を外部から参照できるようにエクスポート
 try:
     from ollama import ResponseError
@@ -16,8 +10,19 @@ except ImportError:
     class ResponseError(Exception):
         pass
 
+def _resolve_config_path() -> Path:
+    """
+    設定ファイルパスを毎回動的に解決する。
+    モジュールインポート時に固定すると PyInstaller バンドル内で
+    main.py と異なるパスを参照してしまうため、呼び出しごとに評価する。
+    """
+    base = Path(os.environ.get('OMCHAT_BASE_DIR', str(Path(__file__).parent.parent)))
+    data = Path(os.environ.get('OMCHAT_DATA_DIR', str(base / 'data')))
+    user_cfg = data / "config.yaml"
+    return user_cfg if user_cfg.exists() else base / "config.yaml"
+
 def load_config():
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    with open(_resolve_config_path(), "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def is_ollama_running() -> bool:
@@ -82,13 +87,50 @@ def _chat_openai(messages: list, system_prompt: str, config: dict) -> str:
     response = client.chat.completions.create(model=model, messages=full_messages)
     return response.choices[0].message.content
 
+def _parse_api_error(status_code: int, resp_text: str, provider: str) -> str:
+    """APIエラーレスポンスをユーザー向けのわかりやすい日本語メッセージに変換する"""
+    import json
+    # JSONからメッセージを抽出
+    raw_msg = ""
+    try:
+        err = json.loads(resp_text)
+        # Gemini: [{"error": {"message": "..."}}]
+        if isinstance(err, list) and err:
+            err = err[0]
+        # {"error": {"message": "..."}} 形式
+        if isinstance(err, dict):
+            raw_msg = (err.get("error", {}).get("message", "")
+                       or err.get("message", "")
+                       or str(err))
+    except Exception:
+        raw_msg = resp_text[:150]
+
+    # ステータスコード別の日本語メッセージ
+    if status_code == 401 or status_code == 403:
+        return f"🔑 {provider} APIキーが無効または権限がありません。設定画面でAPIキーを確認してください。"
+    if status_code == 429:
+        if "spending cap" in raw_msg or "quota" in raw_msg.lower():
+            return (f"⚠️ {provider} の月間利用上限に達しました。"
+                    "APIコンソールで上限を確認・変更してください。")
+        return f"⏱ {provider} のリクエスト制限に達しました。しばらく待ってから再試行してください。"
+    if status_code == 400:
+        if "Authorization" in raw_msg or "auth" in raw_msg.lower():
+            return f"🔑 {provider} の認証に失敗しました。APIキーを確認してください。"
+        if "model" in raw_msg.lower():
+            return f"🔍 {provider} モデル名が無効です。設定画面でモデルを確認してください。"
+        return f"❌ {provider} へのリクエストが無効です: {raw_msg[:100]}"
+    if status_code in (500, 502, 503):
+        return f"🌐 {provider} のサービスが一時的に利用できません。しばらく待ってから再試行してください。"
+    return f"❌ {provider} API エラー ({status_code}): {raw_msg[:120]}"
+
+
 def _chat_claude(messages: list, system_prompt: str, config: dict) -> str:
     """Anthropic Claude APIを直接呼び出す"""
     api_key = config["ai"].get("claude_api_key", "")
     model = config["ai"].get("claude_model", "claude-sonnet-4-6")
 
     if not api_key:
-        raise ValueError("Anthropic APIキーが設定されていません。設定画面で入力してください。")
+        raise ValueError("🔑 Anthropic APIキーが設定されていません。設定画面で入力してください。")
 
     headers = {
         "x-api-key": api_key,
@@ -111,7 +153,7 @@ def _chat_claude(messages: list, system_prompt: str, config: dict) -> str:
         timeout=60,
     )
     if not resp.ok:
-        raise ValueError(f"Claude API エラー ({resp.status_code}): {resp.text[:200]}")
+        raise ValueError(_parse_api_error(resp.status_code, resp.text, "Claude"))
     return resp.json()["content"][0]["text"]
 
 def _chat_gemini(messages: list, system_prompt: str, config: dict) -> str:
@@ -120,7 +162,7 @@ def _chat_gemini(messages: list, system_prompt: str, config: dict) -> str:
     model = config["ai"].get("gemini_model", "gemini-2.0-flash")
 
     if not api_key:
-        raise ValueError("Google API キーが設定されていません。設定画面で入力してください。")
+        raise ValueError("🔑 Google API キーが設定されていません。設定画面で入力してください。")
 
     full_messages = []
     if system_prompt:
@@ -129,6 +171,7 @@ def _chat_gemini(messages: list, system_prompt: str, config: dict) -> str:
 
     headers = {
         "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",  # OpenAI互換エンドポイントはBearerヘッダーで認証
     }
     body = {
         "model": model,
@@ -137,13 +180,13 @@ def _chat_gemini(messages: list, system_prompt: str, config: dict) -> str:
     }
 
     resp = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/openai/chat/completions?key={api_key}",
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         headers=headers,
         json=body,
         timeout=60,
     )
     if not resp.ok:
-        raise ValueError(f"Gemini API エラー ({resp.status_code}): {resp.text[:200]}")
+        raise ValueError(_parse_api_error(resp.status_code, resp.text, "Gemini"))
     return resp.json()["choices"][0]["message"]["content"]
 
 def get_client_type() -> str:

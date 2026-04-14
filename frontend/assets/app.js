@@ -9,8 +9,18 @@ let _mismatchedModelName = null;
 let _pullPollInterval = null;
 let _currentEngine = 'ollama'; // 現在のエンジン状態
 
+// ===== ダーク/ライトモード: システム外観に連動 =====
+(function initTheme() {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const apply = dark => document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  apply(mq.matches);
+  mq.addEventListener('change', e => apply(e.matches));
+})();
+
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', async () => {
+  // i18n初期化（i18n.jsがロード済みなら）
+  if (typeof applyTranslations === 'function') applyTranslations();
   await checkStatus();
   await loadCommandNames();
   await loadSessions();
@@ -134,7 +144,7 @@ function showWelcome() {
 
   chat.innerHTML = `
     <div class="welcome">
-      <h2>🧠 OllamaMemoryChat</h2>
+      <h2>Memoria</h2>
       <p>会話を記憶するローカルAIチャットです。<br>あなたのデータは、あなたのMacの中だけに保存されます。</p>
       <div class="command-chips">
         ${commandNames.map(name => `
@@ -213,7 +223,7 @@ function appendMessage(role, content, meta = {}) {
 
   let badges = '';
   if (meta.memoryCompressed) {
-    badges += '<div class="memory-badge">🧠 記憶を更新しました</div>';
+    badges += '<div class="memory-badge">💾 記憶を更新しました</div>';
   }
   if (meta.commandUsed) {
     badges += `<div class="memory-badge">⚡ /${meta.commandUsed}</div>`;

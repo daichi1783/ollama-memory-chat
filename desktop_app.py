@@ -1,5 +1,5 @@
 """
-OllamaMemoryChat デスクトップアプリ起動スクリプト
+Memoria デスクトップアプリ起動スクリプト
 PyWebViewでWebUIをネイティブMacウィンドウとして表示する
 PyInstaller .appバンドルにも対応
 """
@@ -16,7 +16,7 @@ if getattr(sys, 'frozen', False):
     # sys._MEIPASS = バンドルされたリソースの展開先ディレクトリ
     BUNDLE_DIR = Path(sys._MEIPASS)
     # データ（DB・ユーザー設定）はユーザーのApplication Supportへ
-    DATA_DIR = Path.home() / "Library" / "Application Support" / "OllamaMemoryChat"
+    DATA_DIR = Path.home() / "Library" / "Application Support" / "Memoria"
 else:
     # 通常実行（開発時 / launch_mac.sh 経由）
     BUNDLE_DIR = Path(__file__).parent
@@ -85,9 +85,9 @@ def main():
         config = yaml.safe_load(f)
 
     port = config.get("app", {}).get("port", 8765)
-    app_name = config.get("app", {}).get("name", "OllamaMemoryChat")
+    app_name = config.get("app", {}).get("name", "Memoria")
 
-    print(f"🧠 {app_name} を起動しています...")
+    print(f"✨ {app_name} を起動しています...")
 
     # バックエンドをバックグラウンドで起動
     server_thread = threading.Thread(target=start_backend, daemon=True)

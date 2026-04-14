@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>設定 — OllamaMemoryChat</title>
+  <title>Settings — Memoria</title>
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
   <!-- サイドバー -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1>🧠 OllamaMemoryChat</h1>
+      <h1>Memoria</h1>
       <div class="version">v0.1.0-beta</div>
     </div>
     <nav class="sidebar-nav">
@@ -178,7 +178,7 @@
 
       <!-- 記憶設定 -->
       <div class="settings-section">
-        <div class="settings-section-header">🧠 記憶設定</div>
+        <div class="settings-section-header">💾 記憶設定</div>
         <div class="settings-row">
           <div>
             <div class="settings-label">記憶圧縮タイミング</div>
@@ -242,19 +242,42 @@
         </div>
       </div>
 
+      <!-- 言語設定 -->
+      <div class="settings-section">
+        <div class="settings-section-header" data-i18n="settings.lang.section">言語 / Language / Idioma</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label" data-i18n="settings.lang.label">表示言語</div>
+          </div>
+          <select id="langSelect" class="settings-input" style="min-width:160px;" onchange="setLang(this.value)">
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="es">🇪🇸 Español</option>
+          </select>
+        </div>
+      </div>
+
       <!-- アプリ情報 -->
       <div class="settings-section">
-        <div class="settings-section-header">ℹ️ アプリ情報</div>
+        <div class="settings-section-header">ℹ️ <span data-i18n="settings.appinfo.section">アプリ情報</span></div>
         <div class="settings-row">
-          <div class="settings-label">バージョン</div>
-          <div style="color:var(--text-secondary); font-size:14px;">v0.1.0-beta</div>
+          <div class="settings-label" data-i18n="settings.appinfo.version.label">バージョン</div>
+          <div style="color:var(--text-secondary); font-size:14px;">v1.0.0</div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label" data-i18n="settings.appinfo.author">作成者</div>
+          <div style="color:var(--text-secondary); font-size:14px;">Daichi.T</div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label" data-i18n="settings.appinfo.price">価格</div>
+          <div style="color:var(--text-secondary); font-size:14px;">$10</div>
         </div>
         <div class="settings-row">
           <div>
-            <div class="settings-label">プライバシー</div>
-            <div class="settings-sublabel">すべてのデータはあなたのMac内にのみ保存されます</div>
+            <div class="settings-label" data-i18n="settings.appinfo.privacy.label">プライバシー</div>
+            <div class="settings-sublabel" data-i18n="settings.appinfo.privacy.sub">すべてのデータはあなたのMac内にのみ保存されます</div>
           </div>
-          <div style="color:var(--success); font-size:13px;">🔒 完全ローカル</div>
+          <div style="color:var(--success); font-size:13px;" data-i18n="settings.appinfo.privacy.badge">🔒 完全ローカル</div>
         </div>
       </div>
     </div>
@@ -263,12 +286,17 @@
   <!-- トースト通知 -->
   <div id="toast" class="toast"></div>
 
+  <script src="/assets/i18n.js"></script>
   <script src="/assets/app.js"></script>
   <script>
     // NOTE: API_BASE は app.js で定義済み。ここでは再宣言しない。
 
     // 設定画面の初期化
     document.addEventListener('DOMContentLoaded', async () => {
+      // 言語セレクトの初期値を設定
+      const langSel = document.getElementById('langSelect');
+      if (langSel) langSel.value = getCurrentLang();
+
       await loadSettings();
       await loadCommands();
       await loadOllamaModels();
@@ -287,34 +315,63 @@
       if (ollamaSection) ollamaSection.style.display = engine === 'ollama' ? '' : 'none';
     }
 
-    // インストール済みモデルをドロップダウンに反映
+    // インストール済み＋おすすめ（未インストール）モデルをドロップダウンに反映
     async function populateModelDropdown(currentModel) {
       const sel = document.getElementById('ollamaModel');
       if (!sel) return;
       try {
         const r = await fetch(`${API_BASE}/api/setup/models`);
         const data = await r.json();
-        const models = data.installed || [];
+        const installed = data.installed || [];
+        const recommended = data.recommended || [];
 
         sel.innerHTML = '';
-        if (models.length === 0) {
-          sel.innerHTML = '<option value="">インストール済みモデルなし</option>';
-        } else {
-          models.forEach(m => {
+
+        // ── インストール済みグループ ──
+        if (installed.length > 0) {
+          const grp = document.createElement('optgroup');
+          grp.label = '✅ インストール済み';
+          installed.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.name;
             opt.textContent = `${m.name}  (${m.size_gb} GB)`;
-            sel.appendChild(opt);
+            opt.dataset.installed = 'true';
+            grp.appendChild(opt);
           });
-          // 現在の設定値を選択（なければ先頭）
-          if (currentModel && models.some(m => m.name === currentModel)) {
+          sel.appendChild(grp);
+        }
+
+        // ── 未インストールのおすすめモデルグループ ──
+        const installedNames = new Set(installed.map(m => m.name));
+        const notInstalled = recommended.filter(m => !installedNames.has(m.name));
+        if (notInstalled.length > 0) {
+          const grp = document.createElement('optgroup');
+          grp.label = '📦 未インストール（選択すると自動インストール）';
+          notInstalled.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.name;
+            opt.textContent = `${m.display_name || m.name}  (${m.size_gb} GB)`;
+            opt.dataset.installed = 'false';
+            grp.appendChild(opt);
+          });
+          sel.appendChild(grp);
+        }
+
+        if (sel.options.length === 0) {
+          sel.innerHTML = '<option value="">インストール済みモデルなし</option>';
+        }
+
+        // 現在の設定値を選択
+        if (currentModel) {
+          const allVals = [...sel.options].map(o => o.value);
+          if (allVals.includes(currentModel)) {
             sel.value = currentModel;
-          } else if (currentModel) {
-            // 設定されているモデルが一覧にない場合: 先頭に追加してハイライト
+          } else {
             const opt = document.createElement('option');
             opt.value = currentModel;
-            opt.textContent = `⚠️ ${currentModel}（未インストール）`;
+            opt.textContent = `⚠️ ${currentModel}（不明なモデル）`;
             opt.style.color = '#f39c12';
+            opt.dataset.installed = 'false';
             sel.insertBefore(opt, sel.firstChild);
             sel.value = currentModel;
           }
@@ -360,6 +417,31 @@
 
     async function saveAISettings() {
       const engine = document.getElementById('engineSelect').value;
+
+      // Ollamaで未インストールモデルが選択された場合はインストール確認
+      if (engine === 'ollama') {
+        const sel = document.getElementById('ollamaModel');
+        const selectedOpt = sel.options[sel.selectedIndex];
+        if (selectedOpt && selectedOpt.dataset.installed === 'false') {
+          const modelName = sel.value;
+          const ok = confirm(
+            `「${modelName}」はまだインストールされていません。\n\n今すぐインストールしますか？\n（数GBのダウンロードが発生します）`
+          );
+          if (!ok) return;
+          await installModelWithProgress(modelName, async () => {
+            selectedOpt.dataset.installed = 'true';
+            await _saveAISettingsCore();
+            await loadOllamaModels();
+          });
+          return;
+        }
+      }
+      await _saveAISettingsCore();
+    }
+
+    // 実際の保存処理（共通）
+    async function _saveAISettingsCore() {
+      const engine = document.getElementById('engineSelect').value;
       const openaiApiKey = document.getElementById('openaiApiKey').value;
       const claudeApiKey = document.getElementById('claudeApiKey').value;
       const geminiApiKey = document.getElementById('geminiApiKey').value;
@@ -373,7 +455,6 @@
         claude_model: document.getElementById('claudeModel').value,
         gemini_model: document.getElementById('geminiModel').value,
       };
-      // APIキーは入力があった場合のみ送信（空欄 = 変更なし）
       if (openaiApiKey) body.openai_api_key = openaiApiKey;
       if (claudeApiKey) body.claude_api_key = claudeApiKey;
       if (geminiApiKey) body.gemini_api_key = geminiApiKey;
@@ -381,16 +462,68 @@
       try {
         await apiRequest('POST', '/api/settings/ai', body);
         showToast('✅ 設定を保存しました');
-        // 入力欄をクリア
         document.getElementById('openaiApiKey').value = '';
         document.getElementById('claudeApiKey').value = '';
         document.getElementById('geminiApiKey').value = '';
-        // 保存後にplaceholderを更新
         if (openaiApiKey) document.getElementById('openaiApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
         if (claudeApiKey) document.getElementById('claudeApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
         if (geminiApiKey) document.getElementById('geminiApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
       } catch (e) {
         showToast('❌ 保存に失敗しました: ' + e.message, 'error');
+      }
+    }
+
+    // モデルのインストール（インストール後にコールバックを呼ぶ）
+    async function installModelWithProgress(modelName, onComplete) {
+      // インラインプログレスUIを表示
+      let progressWrap = document.getElementById('modelInstallProgress');
+      if (!progressWrap) {
+        progressWrap = document.createElement('div');
+        progressWrap.id = 'modelInstallProgress';
+        progressWrap.style.cssText = 'margin:12px 0;padding:12px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--border);';
+        progressWrap.innerHTML = `
+          <div id="modelInstallText" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;"></div>
+          <div style="background:var(--bg-primary);border-radius:4px;height:6px;overflow:hidden;">
+            <div id="modelInstallBar" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s;"></div>
+          </div>`;
+        // AIエンジン設定セクションの保存ボタンの前に挿入
+        const saveRow = document.querySelector('.settings-section .settings-row:last-child');
+        if (saveRow) saveRow.parentNode.insertBefore(progressWrap, saveRow);
+      }
+      progressWrap.style.display = '';
+      const setText = t => { document.getElementById('modelInstallText').textContent = t; };
+      const setBar  = p => { document.getElementById('modelInstallBar').style.width = `${p}%`; };
+
+      setText(`${modelName} のダウンロードを開始しています...`);
+      setBar(0);
+
+      try {
+        const r = await fetch(`${API_BASE}/api/setup/pull/${encodeURIComponent(modelName)}`, { method: 'POST' });
+        if (!r.ok) throw new Error('インストール開始に失敗しました');
+        const { task_id } = await r.json();
+
+        await new Promise((resolve, reject) => {
+          const timer = setInterval(async () => {
+            try {
+              const pr = await fetch(`${API_BASE}/api/setup/pull/progress/${task_id}`);
+              const pd = await pr.json();
+              if (pd.status) setText(pd.status);
+              if (pd.percent != null) setBar(Math.min(pd.percent, 99));
+              if (pd.error) { clearInterval(timer); reject(new Error(pd.error)); }
+              else if (pd.done || pd.percent >= 100) { clearInterval(timer); resolve(); }
+            } catch (e) {}
+          }, 1500);
+        });
+
+        setBar(100);
+        setText(`✅ ${modelName} のインストールが完了しました`);
+        await populateModelDropdown(modelName);
+        showToast(`✅ ${modelName} のインストールが完了しました`);
+        if (onComplete) await onComplete();
+        setTimeout(() => { progressWrap.style.display = 'none'; }, 3000);
+      } catch (e) {
+        setText(`❌ インストールに失敗しました: ${e.message}`);
+        showToast(`❌ インストール失敗: ${e.message}`, 'error');
       }
     }
 
@@ -487,16 +620,53 @@
         list.innerHTML = '<div style="padding:12px;color:var(--text-secondary);font-size:13px;">インストール済みモデルがありません</div>';
         return;
       }
-      list.innerHTML = models.map(m => `
-        <div class="command-item">
+      list.innerHTML = models.map(m => {
+        const safeId = m.name.replace(/[^a-zA-Z0-9]/g, '_');
+        return `
+        <div class="command-item" id="model-row-${safeId}">
           <div class="cmd-info">
             <div class="cmd-name" style="color:var(--text-primary)">${m.name}</div>
-            <div class="cmd-desc">${m.size_gb} GB · ${m.modified || ''}</div>
+            <div class="cmd-desc" id="model-status-${safeId}">${m.size_gb} GB · ${m.modified || ''}</div>
           </div>
           <button class="btn btn-secondary" onclick="useModel('${m.name}')">使う</button>
+          <button class="btn btn-secondary" id="update-btn-${safeId}"
+                  onclick="updateModel('${m.name}')" title="最新版に更新（再ダウンロード）" style="font-size:12px;">🔄 更新</button>
           <button class="cmd-action-btn delete" onclick="removeModel('${m.name}')" title="削除">🗑</button>
         </div>
-      `).join('');
+        `;
+      }).join('');
+    }
+
+    async function updateModel(name) {
+      if (!confirm(`「${name}」を最新版に更新しますか？\n（再ダウンロードが発生します）`)) return;
+      const safeId = name.replace(/[^a-zA-Z0-9]/g, '_');
+      const btn = document.getElementById(`update-btn-${safeId}`);
+      const statusEl = document.getElementById(`model-status-${safeId}`);
+      if (btn) { btn.disabled = true; btn.textContent = '更新中...'; }
+
+      try {
+        const r = await fetch(`${API_BASE}/api/setup/pull/${encodeURIComponent(name)}`, { method: 'POST' });
+        if (!r.ok) throw new Error('更新開始に失敗しました');
+        const { task_id } = await r.json();
+
+        await new Promise((resolve, reject) => {
+          const timer = setInterval(async () => {
+            try {
+              const pr = await fetch(`${API_BASE}/api/setup/pull/progress/${task_id}`);
+              const pd = await pr.json();
+              if (statusEl && pd.status) statusEl.textContent = pd.status;
+              if (pd.error) { clearInterval(timer); reject(new Error(pd.error)); }
+              else if (pd.done || pd.percent >= 100) { clearInterval(timer); resolve(); }
+            } catch (e) {}
+          }, 1500);
+        });
+
+        showToast(`✅ ${name} を最新版に更新しました`);
+        await loadOllamaModels();
+      } catch (e) {
+        showToast(`❌ 更新に失敗しました: ${e.message}`, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 更新'; }
+      }
     }
 
     async function useModel(name) {

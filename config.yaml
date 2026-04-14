@@ -1,7 +1,7 @@
-# OllamaMemoryChat 設定ファイル
+# Memoria 設定ファイル
 app:
-  name: "OllamaMemoryChat"
-  version: "0.1.0-beta"
+  name: "Memoria"
+  version: "1.0.0"
   port: 8765
 
 ai:

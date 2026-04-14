@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OllamaMemoryChat 統合テスト
+Memoria 統合テスト
 FastAPIサーバーを実際に起動してAPIをテストする
 Ollamaが起動していなくても大部分はテスト可能
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, "backend")
 
 print("=" * 60)
-print("OllamaMemoryChat 統合テスト")
+print("Memoria 統合テスト")
 print("=" * 60)
 
 # requestsのインストール確認
@@ -152,7 +152,7 @@ test("GET /api/memory", test_memory_api)
 def test_frontend_html():
     r = requests.get(f"{BASE_URL}/", timeout=5)
     assert r.status_code == 200
-    assert "OllamaMemoryChat" in r.text
+    assert "Memoria" in r.text
 
 test("GET /（index.html配信）", test_frontend_html)
 

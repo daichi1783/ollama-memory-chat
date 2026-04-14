@@ -11,7 +11,7 @@ import memory_manager as mm
 import command_manager as cm
 
 print("=" * 50)
-print("OllamaMemoryChat バックエンドテスト")
+print("Memoria バックエンドテスト")
 print("=" * 50)
 
 # テスト1: DB初期化
