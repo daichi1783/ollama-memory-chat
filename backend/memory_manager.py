@@ -58,6 +58,16 @@ def init_db():
     conn.execute("PRAGMA synchronous = NORMAL")
     cursor = conn.cursor()
 
+    # セッションテーブル
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL DEFAULT '新しいチャット',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # 会話履歴テーブル
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS messages (
@@ -95,12 +105,83 @@ def init_db():
     conn.commit()
     conn.close()
 
+def create_session(session_id: str, title: str = "新しいチャット") -> dict:
+    """セッションを作成する"""
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            "INSERT INTO sessions (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            (session_id, title, datetime.now().isoformat(), datetime.now().isoformat())
+        )
+        conn.commit()
+        conn.close()
+        return {"success": True, "session_id": session_id}
+    except sqlite3.IntegrityError:
+        conn.close()
+        return {"success": False, "message": "セッションはすでに存在します"}
+    except Exception as e:
+        conn.close()
+        return {"success": False, "message": str(e)}
+
+def get_sessions() -> list:
+    """セッション一覧を取得する（updated_at降順）"""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT id, title, created_at, updated_at FROM sessions ORDER BY updated_at DESC"
+    ).fetchall()
+    conn.close()
+    return [{"id": r["id"], "title": r["title"], "created_at": r["created_at"], "updated_at": r["updated_at"]} for r in rows]
+
+def update_session_title(session_id: str, title: str):
+    """セッションのタイトルを更新する"""
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?",
+        (title, datetime.now().isoformat(), session_id)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_session(session_id: str):
+    """セッションを削除する（messages と memory_summaries も削除）"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+    cursor.execute("DELETE FROM memory_summaries WHERE session_id = ?", (session_id,))
+    cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
+def get_session_messages(session_id: str) -> list:
+    """UI表示用にセッションのメッセージを取得する"""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT role, content, created_at FROM messages WHERE session_id = ? ORDER BY id ASC",
+        (session_id,)
+    ).fetchall()
+    conn.close()
+    return [{"role": r["role"], "content": r["content"], "timestamp": r["created_at"]} for r in rows]
+
+def ensure_session_exists(session_id: str):
+    """セッションが存在しなければ作成する"""
+    conn = get_db_connection()
+    existing = conn.execute("SELECT id FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    conn.close()
+
+    if not existing:
+        create_session(session_id, "新しいチャット")
+
 def add_message(role: str, content: str, session_id: str = "default"):
     """メッセージを保存する"""
     conn = get_db_connection()
     conn.execute(
         "INSERT INTO messages (role, content, created_at, session_id) VALUES (?, ?, ?, ?)",
         (role, content, datetime.now().isoformat(), session_id)
+    )
+    # update_at を更新
+    conn.execute(
+        "UPDATE sessions SET updated_at = ? WHERE id = ?",
+        (datetime.now().isoformat(), session_id)
     )
     conn.commit()
     conn.close()

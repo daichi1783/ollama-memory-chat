@@ -132,6 +132,14 @@ class AIEngineUpdate(BaseModel):
 async def chat_endpoint(req: ChatRequest):
     """メインチャットエンドポイント"""
     try:
+        # セッションが存在しない場合は作成（最初のメッセージの最初の20文字をタイトルに）
+        mm.ensure_session_exists(req.session_id)
+        existing_messages = mm.get_recent_messages(req.session_id, limit=1)
+        if not existing_messages:
+            # このセッションは初めて。タイトルを設定する
+            title = req.message[:20]
+            mm.update_session_title(req.session_id, title)
+
         command_name, body = cm.parse_command(req.message)
         memory_compressed = False
 
@@ -195,11 +203,67 @@ async def chat_endpoint(req: ChatRequest):
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # 詳細なエラーメッセージをログに記録（外部には返さない）
+    except oc.ResponseError as e:
+        # Ollama モデルが見つからないエラー
         import logging
-        logging.error(f"Chat error: {str(e)}")
-        raise HTTPException(status_code=500, detail="チャット処理中にエラーが発生しました")
+        logging.error(f"Ollama model error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"モデルが見つかりません。設定画面でモデルを確認してください。")
+    except (ConnectionRefusedError, Exception) as e:
+        # Ollama 接続エラー
+        error_type_name = type(e).__name__
+        import logging
+        logging.error(f"Chat error ({error_type_name}): {str(e)}")
+
+        # URLError、接続エラーの判定
+        if "Connection refused" in str(e) or "ConnectionRefused" in error_type_name or "URLError" in error_type_name:
+            raise HTTPException(status_code=500, detail="Ollamaに接続できません。Ollamaが起動しているか確認してください。")
+        else:
+            raise HTTPException(status_code=500, detail=f"エラーが発生しました: {error_type_name}")
+
+# ===== セッション管理API =====
+
+@app.get("/api/sessions")
+async def list_sessions():
+    """セッション一覧を返す"""
+    sessions = mm.get_sessions()
+    return {"sessions": sessions}
+
+@app.post("/api/sessions")
+async def create_session(body: dict):
+    """新しいセッションを作成する"""
+    session_id = body.get("session_id")
+    title = body.get("title", "新しいチャット")
+
+    if not session_id:
+        # session_idが与えられない場合はUUIDで生成
+        import uuid
+        session_id = str(uuid.uuid4())
+
+    result = mm.create_session(session_id, title)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """セッションを削除する"""
+    mm.delete_session(session_id)
+    return {"success": True, "message": "セッションを削除しました"}
+
+@app.put("/api/sessions/{session_id}/title")
+async def rename_session(session_id: str, body: dict):
+    """セッションのタイトルを更新する"""
+    title = body.get("title")
+    if not title:
+        raise HTTPException(status_code=400, detail="タイトルは必須です")
+    mm.update_session_title(session_id, title)
+    return {"success": True, "message": "タイトルを更新しました"}
+
+@app.get("/api/messages/{session_id}")
+async def get_messages(session_id: str):
+    """セッションのメッセージを取得する"""
+    messages = mm.get_session_messages(session_id)
+    return {"messages": messages}
 
 # ===== 記憶API =====
 

@@ -1,17 +1,17 @@
 // frontend/assets/app.js
 const API_BASE = 'http://127.0.0.1:8765';
-const SESSION_ID = 'default';
 
 // ===== 状態管理 =====
 let commandNames = [];
 let isLoading = false;
+let currentSessionId = null;
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', async () => {
   await checkStatus();
   await loadCommandNames();
+  await loadSessions();
   setupInputHandlers();
-  showWelcome();
   setInterval(checkStatus, 30000); // 30秒ごとにステータス確認
 });
 
@@ -99,6 +99,7 @@ function hideWelcome() {
 
 async function sendMessage() {
   if (isLoading) return;
+  if (!currentSessionId) return;
 
   const input = document.getElementById('messageInput');
   const message = input.value.trim();
@@ -120,7 +121,7 @@ async function sendMessage() {
   try {
     const data = await apiRequest('POST', '/api/chat', {
       message,
-      session_id: SESSION_ID
+      session_id: currentSessionId
     });
 
     removeLoading(loadingId);
@@ -236,9 +237,14 @@ function setupInputHandlers() {
     handleCommandSuggest(input.value);
   });
 
-  // Enter送信（Shift+Enterで改行）
+  // Command+Enter送信（IME対応）
+  // IME変換中（日本語入力中）は絶対に送信しない
+  // Command+Enter で送信、通常Enterは改行
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // IME変換中は無視
+    if (e.isComposing || e.keyCode === 229) return;
+
+    if (e.key === 'Enter' && e.metaKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -339,6 +345,111 @@ function selectSuggest(name) {
     input.focus();
   }
   hideSuggest();
+}
+
+// ===== セッション管理 =====
+
+async function loadSessions() {
+  try {
+    const data = await apiRequest('GET', '/api/sessions');
+    const sessions = data.sessions || [];
+
+    const listContainer = document.getElementById('session-list');
+    if (!listContainer) return;
+
+    // セッションリストを再度描画
+    listContainer.innerHTML = '';
+
+    if (sessions.length === 0) {
+      // セッションがなければ新規作成
+      await createNewSession();
+    } else {
+      // 最新のセッションを選択してロード
+      sessions.forEach((session) => {
+        const item = document.createElement('div');
+        item.className = 'session-item';
+        item.innerHTML = `
+          <div class="session-title" onclick="switchSession('${session.id}')">${escapeHtml(session.title)}</div>
+          <button class="session-delete" onclick="deleteSession('${session.id}', event)">×</button>
+        `;
+        listContainer.appendChild(item);
+      });
+
+      // 最初のセッションを選択（最新のセッション）
+      await switchSession(sessions[0].id);
+    }
+  } catch (e) {
+    console.error('セッション読み込みエラー:', e);
+  }
+}
+
+async function createNewSession() {
+  try {
+    const data = await apiRequest('POST', '/api/sessions', {});
+    const sessionId = data.session_id;
+    await switchSession(sessionId);
+    await loadSessions();
+  } catch (e) {
+    showToast(`セッション作成エラー: ${e.message}`, 'error');
+  }
+}
+
+async function switchSession(sessionId) {
+  currentSessionId = sessionId;
+
+  // サイドバーでのアクティブ状態を更新
+  document.querySelectorAll('.session-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  const activeItem = Array.from(document.querySelectorAll('.session-item')).find(item => {
+    return item.querySelector('.session-title').textContent;
+  });
+  if (activeItem) {
+    // 正しい一致を見つける
+    document.querySelectorAll('.session-item').forEach(item => {
+      const titleDiv = item.querySelector('.session-title');
+      if (titleDiv && titleDiv.onclick.toString().includes(sessionId)) {
+        item.classList.add('active');
+      }
+    });
+  }
+
+  // チャットメッセージをクリアして、DBからメッセージを読み込む
+  const chatContainer = document.getElementById('chatMessages');
+  if (chatContainer) {
+    chatContainer.innerHTML = '';
+  }
+
+  try {
+    const data = await apiRequest('GET', `/api/messages/${sessionId}`);
+    const messages = data.messages || [];
+
+    if (messages.length === 0) {
+      showWelcome();
+    } else {
+      hideWelcome();
+      messages.forEach(msg => {
+        appendMessage(msg.role, msg.content);
+      });
+    }
+  } catch (e) {
+    console.error('メッセージ読み込みエラー:', e);
+    showWelcome();
+  }
+}
+
+async function deleteSession(sessionId, e) {
+  e.stopPropagation();
+
+  if (!confirm('このセッションを削除しますか？')) return;
+
+  try {
+    await apiRequest('DELETE', `/api/sessions/${sessionId}`);
+    await loadSessions();
+    showToast('セッションを削除しました', 'success');
+  } catch (e) {
+    showToast(`削除エラー: ${e.message}`, 'error');
+  }
 }
 
 // ===== ユーティリティ =====
