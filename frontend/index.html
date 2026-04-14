@@ -7,6 +7,57 @@
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
+  <!-- ===== オンボーディングモーダル（初回起動時のみ） ===== -->
+  <div id="onboardingOverlay" class="onboarding-overlay" style="display:none;">
+    <div class="onboarding-card">
+      <div class="onboarding-logo">
+        <svg width="56" height="56" viewBox="0 0 80 80" fill="none">
+          <defs>
+            <linearGradient id="obGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#89b4fa"/>
+              <stop offset="50%" stop-color="#cba6f7"/>
+              <stop offset="100%" stop-color="#f5c2e7"/>
+            </linearGradient>
+          </defs>
+          <circle cx="40" cy="40" r="38" fill="url(#obGrad)"/>
+          <circle cx="40" cy="40" r="20" fill="white" opacity="0.15"/>
+          <circle cx="40" cy="40" r="10" fill="white" opacity="0.2"/>
+          <circle cx="40" cy="40" r="4.5" fill="white" opacity="0.9"/>
+          <circle cx="40" cy="17" r="4" fill="white" opacity="0.8"/>
+          <circle cx="63" cy="40" r="4" fill="white" opacity="0.8"/>
+          <circle cx="40" cy="63" r="4" fill="white" opacity="0.8"/>
+          <circle cx="17" cy="40" r="4" fill="white" opacity="0.8"/>
+        </svg>
+      </div>
+      <h1 class="onboarding-title" data-i18n="onboard.title">Memoriaへようこそ</h1>
+      <p class="onboarding-sub" data-i18n="onboard.sub">あなたのことを覚えてくれるAIチャットです</p>
+      <div class="onboarding-steps">
+        <div class="onboard-step">
+          <div class="onboard-icon">💬</div>
+          <div><strong data-i18n="onboard.step1.title">チャットするだけ</strong><br><span data-i18n="onboard.step1.desc">まずはメッセージを入力して送信しましょう</span></div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-icon">🧠</div>
+          <div><strong data-i18n="onboard.step2.title">記憶してもらう</strong><br><span data-i18n="onboard.step2.desc">/remember 名前や好みを打つと、次回も覚えてくれます</span></div>
+        </div>
+        <div class="onboard-step">
+          <div class="onboard-icon">🤖</div>
+          <div><strong data-i18n="onboard.step3.title">AIを選べる</strong><br><span data-i18n="onboard.step3.desc">ローカル（無料・オフライン）やClaudeなど複数のAIに対応</span></div>
+        </div>
+      </div>
+      <button class="onboarding-btn" onclick="closeOnboarding()" data-i18n="onboard.btn">はじめる</button>
+      <p class="onboarding-privacy" data-i18n="onboard.privacy">🔒 すべてのデータはあなたのMacにのみ保存されます</p>
+    </div>
+  </div>
+
+  <!-- ===== Ollamaオフライン案内バナー ===== -->
+  <div id="ollamaOfflineBanner" class="ollama-offline-banner" style="display:none;">
+    <span>⚠️ <span data-i18n="ollama.offline.msg">Ollamaが起動していません</span></span>
+    <a href="/setup" class="offline-setup-link" data-i18n="ollama.offline.fix">起動・セットアップページへ →</a>
+    <button onclick="document.getElementById('ollamaOfflineBanner').style.display='none'" class="offline-close">×</button>
+  </div>
+
+
   <!-- サイドバー -->
   <aside class="sidebar">
     <div class="sidebar-header">

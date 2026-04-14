@@ -141,7 +141,8 @@
           <div class="settings-row">
             <div>
               <div class="settings-label" data-i18n="settings.claude.apikey.label">Anthropic APIキー</div>
-              <div class="settings-sublabel" data-i18n="settings.claude.apikey.sub">console.anthropic.comで取得 · ローカルに保存</div>
+              <div class="settings-sublabel" data-i18n="settings.claude.apikey.sub">ローカルに保存 · 外部送信なし</div>
+              <a href="https://console.anthropic.com" target="_blank" class="api-link-btn" data-i18n="settings.apikey.getbtn">🔗 APIキーを取得 →</a>
             </div>
             <input type="password" id="claudeApiKey" class="settings-input" placeholder="sk-ant-...">
           </div>
@@ -163,7 +164,8 @@
           <div class="settings-row">
             <div>
               <div class="settings-label" data-i18n="settings.gemini.apikey.label">Google API キー</div>
-              <div class="settings-sublabel" data-i18n="settings.gemini.apikey.sub">aistudio.google.comで取得 · ローカルに保存</div>
+              <div class="settings-sublabel" data-i18n="settings.gemini.apikey.sub">ローカルに保存 · 外部送信なし</div>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-link-btn" data-i18n="settings.apikey.getbtn">🔗 APIキーを取得 →</a>
             </div>
             <input type="password" id="geminiApiKey" class="settings-input" placeholder="AIza...">
           </div>
@@ -259,6 +261,33 @@
           </div>
           <div style="text-align:right;">
             <button class="btn btn-primary" onclick="addCommand()" data-i18n="settings.commands.add.btn">追加する</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- アクセシビリティ・操作設定 -->
+      <div class="settings-section">
+        <div class="settings-section-header">♿ <span data-i18n="settings.accessibility.section">操作設定</span></div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label" data-i18n="settings.enter.send.label">Enterキーで送信</div>
+            <div class="settings-sublabel" data-i18n="settings.enter.send.sub">ONにすると Enter で送信、Shift+Enter で改行になります（デフォルト: Cmd+Enter）</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="enterToSendToggle" onchange="toggleEnterSend(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label" data-i18n="settings.fontsize.label">文字サイズ</div>
+            <div class="settings-sublabel" data-i18n="settings.fontsize.sub">画面全体の文字サイズを変更します</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="font-size-btn" onclick="setFontSize('small')" data-size="small" data-i18n="settings.fontsize.s">小</button>
+            <button class="font-size-btn active" onclick="setFontSize('medium')" data-size="medium" data-i18n="settings.fontsize.m">中</button>
+            <button class="font-size-btn" onclick="setFontSize('large')" data-size="large" data-i18n="settings.fontsize.l">大</button>
           </div>
         </div>
       </div>

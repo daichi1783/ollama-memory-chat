@@ -71,6 +71,7 @@ async function checkStatus() {
     const status = await apiRequest('GET', '/api/status');
     updateStatusIndicator(status.ollama_running, status.engine);
     updateEngineSwitchLabel(status.engine, status.model_label);
+    updateOllamaOfflineBanner(status.ollama_running, status.engine);
   } catch (e) {
     updateStatusIndicator(false, 'unknown');
   }
@@ -227,6 +228,7 @@ async function sendMessage() {
   } finally {
     isLoading = false;
     toggleSendButton(true);
+  updateSendButtonState();
   }
 }
 
@@ -249,10 +251,11 @@ function appendMessage(role, content, meta = {}) {
     badges += `<div class="memory-badge">⚡ /${meta.commandUsed}</div>`;
   }
 
+  const copyBtn = role === 'ai' ? `<button class="msg-copy-btn" onclick="copyMessageText(this)" title="コピー">⎘</button>` : '';
   div.innerHTML = `
     <div class="avatar ${avatarClass}">${avatarContent}</div>
     <div class="message-content">
-      <div class="message-bubble">${rendered}</div>
+      <div class="message-bubble">${rendered}${copyBtn}</div>
       ${badges}
     </div>
   `;
@@ -337,6 +340,11 @@ function setupInputHandlers() {
     if (e.isComposing || e.keyCode === 229) return;
 
     if (e.key === 'Enter' && e.metaKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+    // Enter送信モード（設定でONにしているとき）
+    if (e.key === 'Enter' && !e.metaKey && !e.shiftKey && _enterToSend) {
       e.preventDefault();
       sendMessage();
     }
@@ -803,3 +811,100 @@ function _stopRecording() {
   _recognition?.stop();
   _recognition = null;
 }
+
+// ===== UX Fix 1: オンボーディング =====
+function initOnboarding() {
+  if (!localStorage.getItem('memoria_onboarded')) {
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+}
+
+function closeOnboarding() {
+  localStorage.setItem('memoria_onboarded', '1');
+  const overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+// ===== UX Fix 2: Ollama オフライン案内 =====
+function updateOllamaOfflineBanner(ollamaRunning, engine) {
+  const banner = document.getElementById('ollamaOfflineBanner');
+  if (!banner) return;
+  banner.style.display = (engine === 'ollama' && !ollamaRunning) ? 'flex' : 'none';
+}
+
+// ===== UX Fix 3: 送信ボタン — 空のとき無効 =====
+function updateSendButtonState() {
+  const input = document.getElementById('messageInput');
+  const btn = document.getElementById('sendBtn');
+  if (!input || !btn) return;
+  const empty = input.value.trim() === '';
+  btn.disabled = empty || isLoading;
+  btn.style.opacity = empty ? '0.4' : '1';
+}
+
+// ===== UX Fix 4: メッセージのコピーボタン =====
+function copyMessageText(btn) {
+  const bubble = btn.closest('.message-content')?.querySelector('.message-bubble');
+  if (!bubble) return;
+  navigator.clipboard.writeText(bubble.innerText || bubble.textContent).then(() => {
+    btn.textContent = '✅';
+    setTimeout(() => { btn.textContent = '⎘'; }, 1500);
+  }).catch(() => showToast('コピーに失敗しました', 'error'));
+}
+
+// ===== UX Fix 5: Enter送信トグル =====
+let _enterToSend = localStorage.getItem('memoria_enter_send') === '1';
+
+function toggleEnterSend(enabled) {
+  _enterToSend = enabled;
+  localStorage.setItem('memoria_enter_send', enabled ? '1' : '0');
+  const tFn = typeof t === 'function' ? t : k => k;
+  const ph = enabled
+    ? tFn('chat.placeholder.enter') || 'メッセージを入力...（Enter で送信、Shift+Enter で改行）'
+    : tFn('chat.placeholder') || 'メッセージを入力...（/でコマンド、Cmd+Enter で送信）';
+  const input = document.getElementById('messageInput');
+  if (input) input.placeholder = ph;
+}
+
+function initEnterSendToggle() {
+  const toggle = document.getElementById('enterToSendToggle');
+  if (toggle) {
+    toggle.checked = _enterToSend;
+    toggleEnterSend(_enterToSend);
+  }
+}
+
+// ===== UX Fix 6: フォントサイズ =====
+function setFontSize(size) {
+  const map = { small: '13px', medium: '15px', large: '17px' };
+  document.documentElement.style.setProperty('--base-font-size', map[size] || '15px');
+  localStorage.setItem('memoria_font_size', size);
+  document.querySelectorAll('.font-size-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.size === size);
+  });
+}
+
+function initFontSize() {
+  const saved = localStorage.getItem('memoria_font_size') || 'medium';
+  setFontSize(saved);
+}
+
+// ===== UX Fix 7: エンジン名をメッセージバブルに表示 =====
+// appendMessage に engine ラベルを追加（AI応答のみ）
+// → appendMessage の meta 引数を拡張して engineLabel を渡す
+
+// ===== 初期化への統合 =====
+const _originalDOMReady = document.addEventListener.bind(document);
+// DOMContentLoaded に追加の初期化を注入
+window.addEventListener('DOMContentLoaded', () => {
+  initOnboarding();
+  initFontSize();
+  initEnterSendToggle();
+  // 送信ボタンの空チェック
+  const input = document.getElementById('messageInput');
+  if (input) {
+    input.addEventListener('input', updateSendButtonState);
+    updateSendButtonState();
+  }
+});
