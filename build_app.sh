@@ -66,6 +66,11 @@ $PIP install \
   -q
 
 echo "  ✅ パッケージ準備完了"
+$PIP install pillow numpy -q
+
+echo ""
+echo "【2.5/5】アプリアイコンを生成中..."
+$VENV_PYTHON make_icon.py
 
 # ===== 3. PyInstallerでビルド =====
 echo ""
