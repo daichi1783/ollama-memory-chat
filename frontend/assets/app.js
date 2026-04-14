@@ -687,3 +687,104 @@ function showToast(message, type = 'success') {
   toast.className = `toast ${type} show`;
   setTimeout(() => { toast.classList.remove('show'); }, 3000);
 }
+
+// ===== 音声入力 (Web Speech API) =====
+let _recognition = null;
+let _isRecording = false;
+let _interimText = '';   // 認識中（暫定）のテキスト
+
+// 言語コードマッピング: i18n lang → BCP-47
+const SPEECH_LANG_MAP = { ja: 'ja-JP', en: 'en-US', es: 'es-ES' };
+
+function _getSpeechLang() {
+  const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'ja';
+  return SPEECH_LANG_MAP[lang] || 'ja-JP';
+}
+
+function toggleVoiceInput() {
+  if (_isRecording) {
+    _stopRecording();
+  } else {
+    _startRecording();
+  }
+}
+
+function _startRecording() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    const tFn2 = typeof t === 'function' ? t : k => k;
+    showToast(tFn2('voice.error.no_support'), 'error');
+    return;
+  }
+
+  _recognition = new SR();
+  _recognition.lang = _getSpeechLang();
+  _recognition.continuous = false;       // 一文ごとに停止
+  _recognition.interimResults = true;    // 暫定テキストも表示
+
+  const input = document.getElementById('messageInput');
+  const micBtn = document.getElementById('micBtn');
+  const baseText = input.value;          // 録音前のテキストを保持
+
+  _recognition.onstart = () => {
+    _isRecording = true;
+    _interimText = '';
+    micBtn?.classList.add('recording');
+    const tFn3 = typeof t === 'function' ? t : k => k;
+    showToast(tFn3('voice.listening'), 'success');
+  };
+
+  _recognition.onresult = (event) => {
+    let interim = '';
+    let final   = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const text = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        final += text;
+      } else {
+        interim += text;
+      }
+    }
+    // 確定テキストは入力欄に追記、暫定テキストはプレビュー表示
+    if (final) {
+      const sep = baseText && !baseText.endsWith(' ') ? ' ' : '';
+      input.value = baseText + sep + final.trim();
+      input.dispatchEvent(new Event('input'));   // 高さ自動調整
+    }
+    _interimText = interim;
+    if (interim) {
+      // placeholderを暫定テキストで上書き（視覚的フィードバック）
+      input.placeholder = '🎤 ' + interim;
+    }
+  };
+
+  _recognition.onerror = (event) => {
+    _stopRecording();
+    const msg = {
+      'no-speech':       '音声が検出されませんでした',
+      'not-allowed':     'マイクの使用が拒否されています。システム設定でMemoriaのマイクアクセスを許可してください。',
+      'network':         'ネットワークエラーが発生しました',
+      'audio-capture':   'マイクが見つかりません',
+    }[event.error] || `エラー: ${event.error}`;
+    showToast(msg, 'error');
+  };
+
+  _recognition.onend = () => {
+    _stopRecording();
+    // placeholder を元に戻す
+    const tFn = typeof t === 'function' ? t : () => '';
+    const ph = tFn('chat.placeholder') || 'メッセージを入力...';
+    const input = document.getElementById('messageInput');
+    if (input) input.placeholder = ph;
+  };
+
+  _recognition.start();
+}
+
+function _stopRecording() {
+  _isRecording = false;
+  const micBtn = document.getElementById('micBtn');
+  micBtn?.classList.remove('recording');
+  _recognition?.stop();
+  _recognition = null;
+}

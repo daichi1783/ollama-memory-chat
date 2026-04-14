@@ -95,6 +95,11 @@ const TRANSLATIONS = {
     'toast.command.added': '✅ コマンドを追加しました',
     'toast.command.deleted': '✅ コマンドを削除しました',
     'toast.model.updated': '✅ モデルを最新版に更新しました',
+    'voice.btn.title': '音声入力（クリックで開始/停止）',
+    'voice.listening': '🎤 聞いています...',
+    'voice.error.no_speech': '音声が検出されませんでした',
+    'voice.error.not_allowed': 'マイクの使用が拒否されています。システム設定でMemoriaのマイクアクセスを許可してください。',
+    'voice.error.no_support': 'このブラウザは音声入力に対応していません',
   },
 
   en: {
@@ -181,6 +186,11 @@ const TRANSLATIONS = {
     'toast.command.added': '✅ Command added',
     'toast.command.deleted': '✅ Command deleted',
     'toast.model.updated': '✅ Model updated to latest',
+    'voice.btn.title': 'Voice input (click to start/stop)',
+    'voice.listening': '🎤 Listening...',
+    'voice.error.no_speech': 'No speech detected',
+    'voice.error.not_allowed': 'Microphone access denied. Please allow microphone access for Memoria in System Settings.',
+    'voice.error.no_support': 'This browser does not support voice input',
   },
 
   es: {
@@ -267,6 +277,11 @@ const TRANSLATIONS = {
     'toast.command.added': '✅ Comando añadido',
     'toast.command.deleted': '✅ Comando eliminado',
     'toast.model.updated': '✅ Modelo actualizado',
+    'voice.btn.title': 'Entrada de voz (clic para iniciar/detener)',
+    'voice.listening': '🎤 Escuchando...',
+    'voice.error.no_speech': 'No se detectó voz',
+    'voice.error.not_allowed': 'Acceso al micrófono denegado. Permite el acceso al micrófono en Configuración del Sistema.',
+    'voice.error.no_support': 'Este navegador no admite entrada de voz',
   }
 };
 
