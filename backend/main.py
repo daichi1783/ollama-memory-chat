@@ -165,6 +165,15 @@ async def chat_endpoint(req: ChatRequest):
             help_text += "\n💡 コマンドの追加・編集は設定画面から行えます。"
             return ChatResponse(reply=help_text, command_used="help")
 
+        if command_name == "remember":
+            # グローバルメモリに保存（例: /remember 私の名前はDaichi）
+            if not body.strip():
+                return ChatResponse(reply="💡 使い方: `/remember 覚えておいてほしい内容`\n例: `/remember 私の名前はDaichi`", command_used="remember")
+            result = mm.add_global_memory(body.strip(), source="manual")
+            if result["success"]:
+                return ChatResponse(reply=f"✅ 覚えました！\n\n「{body.strip()}」\n\nこの情報はすべてのセッションで参照されます。設定画面の「記憶の管理」から確認・削除できます。", command_used="remember")
+            return ChatResponse(reply=f"❌ 保存に失敗しました: {result.get('message', '')}", command_used="remember")
+
         # AI呼び出しが必要なコマンドまたは通常会話
         if command_name:
             # コマンドプロンプトを取得
@@ -183,8 +192,8 @@ async def chat_endpoint(req: ChatRequest):
         # 記憶注入したシステムプロンプトを構築
         system_prompt = mm.build_system_prompt(session_id=req.session_id)
 
-        # 最近の会話履歴を取得
-        recent_messages = mm.get_recent_messages(session_id=req.session_id, limit=10)
+        # 最近の会話履歴を取得（20メッセージ = 10往復分）
+        recent_messages = mm.get_recent_messages(session_id=req.session_id, limit=20)
         recent_messages.append({"role": "user", "content": req.message})
 
         # AI呼び出し
@@ -282,6 +291,39 @@ async def clear_memory(session_id: str = "default"):
     conn.commit()
     conn.close()
     return {"success": True, "message": "記憶をすべて削除しました"}
+
+# ===== グローバルメモリAPI =====
+
+class GlobalMemoryCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500)
+
+@app.get("/api/global-memory")
+async def list_global_memory():
+    """グローバルメモリ一覧を返す"""
+    items = mm.get_global_memory()
+    return {"items": items}
+
+@app.post("/api/global-memory")
+async def add_global_memory(body: GlobalMemoryCreate):
+    """グローバルメモリに追加する"""
+    result = mm.add_global_memory(body.content, source="manual")
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("message", "保存に失敗しました"))
+    return result
+
+@app.delete("/api/global-memory/{item_id}")
+async def delete_global_memory(item_id: int):
+    """グローバルメモリの1件を削除する"""
+    deleted = mm.delete_global_memory_item(item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="指定の記憶が見つかりません")
+    return {"success": True}
+
+@app.delete("/api/global-memory")
+async def clear_global_memory():
+    """グローバルメモリをすべて削除する"""
+    mm.clear_global_memory()
+    return {"success": True, "message": "グローバルメモリをすべて削除しました"}
 
 # ===== コマンドAPI =====
 

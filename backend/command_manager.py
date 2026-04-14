@@ -12,14 +12,57 @@ from memory_manager import get_db_connection
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
+# 常に利用できる組み込みコマンド（config.yamlに依存しない）
+_HARDCODED_COMMANDS = [
+    {
+        "name": "english",
+        "description": "入力した日本語をネイティブな自然英語に翻訳します",
+        "prompt": "以下のテキストを、ネイティブスピーカーが書くような自然な英語に翻訳してください。直訳ではなく、英語として自然な表現を使ってください。翻訳結果のみを出力してください。\n\nテキスト: {input}"
+    },
+    {
+        "name": "japanese",
+        "description": "入力した英語を自然な日本語に翻訳します",
+        "prompt": "以下のテキストを、自然な日本語に翻訳してください。直訳ではなく、日本語として自然な表現を使ってください。翻訳結果のみを出力してください。\n\nテキスト: {input}"
+    },
+    {
+        "name": "spanish",
+        "description": "入力したテキストを自然なスペイン語に翻訳します",
+        "prompt": "Translate the following text into natural, fluent Spanish. Use expressions that sound native, not literal translations. Output only the translation.\n\nText: {input}"
+    },
+    {
+        "name": "cal",
+        "description": "文章の文法・表現を校正します（日本語・英語対応）",
+        "prompt": "以下の文章を校正してください。誤字・脱字・文法ミス・不自然な表現があれば修正し、修正箇所と理由を説明してください。\n\nテキスト: {input}"
+    },
+    {
+        "name": "memory",
+        "description": "保存されている記憶サマリーを表示します",
+        "prompt": ""
+    },
+    {
+        "name": "clear",
+        "description": "現在の会話セッションをリセットします（記憶サマリーは保持）",
+        "prompt": ""
+    },
+    {
+        "name": "help",
+        "description": "使用可能なコマンドの一覧を表示します",
+        "prompt": ""
+    },
+    {
+        "name": "remember",
+        "description": "情報をグローバル記憶に保存します（例: /remember 私の名前はDaichi）",
+        "prompt": ""
+    },
+]
+
 def load_config():
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def get_builtin_commands() -> list:
-    """組み込みコマンド一覧を返す"""
-    config = load_config()
-    return config.get("commands", {}).get("builtin", [])
+    """組み込みコマンド一覧を返す（ハードコード優先）"""
+    return _HARDCODED_COMMANDS
 
 def get_user_commands() -> list:
     """ユーザー定義コマンド一覧を返す（DBから）"""

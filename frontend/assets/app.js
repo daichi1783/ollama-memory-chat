@@ -370,12 +370,7 @@ async function loadSessions() {
     } else {
       // 最新のセッションを選択してロード
       sessions.forEach((session) => {
-        const item = document.createElement('div');
-        item.className = 'session-item';
-        item.innerHTML = `
-          <div class="session-title" onclick="switchSession('${session.id}')">${escapeHtml(session.title)}</div>
-          <button class="session-delete" onclick="deleteSession('${session.id}', event)">×</button>
-        `;
+        const item = createSessionItem(session);
         listContainer.appendChild(item);
       });
 
@@ -385,6 +380,51 @@ async function loadSessions() {
   } catch (e) {
     console.error('セッション読み込みエラー:', e);
   }
+}
+
+function createSessionItem(session) {
+  const item = document.createElement('div');
+  item.className = 'session-item';
+  item.dataset.sessionId = session.id;
+  item.innerHTML = `
+    <div class="session-title" onclick="switchSession('${session.id}')" ondblclick="startEditTitle('${session.id}', this)" title="ダブルクリックで編集">${escapeHtml(session.title)}</div>
+    <button class="session-delete" onclick="deleteSession('${session.id}', event)" title="削除">×</button>
+  `;
+  return item;
+}
+
+function startEditTitle(sessionId, titleDiv) {
+  const current = titleDiv.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = current;
+  input.className = 'session-title-input';
+  input.maxLength = 40;
+
+  const finishEdit = async () => {
+    const newTitle = input.value.trim() || current;
+    titleDiv.textContent = newTitle;
+    titleDiv.style.display = '';
+    input.replaceWith(titleDiv);
+    if (newTitle !== current) {
+      try {
+        await apiRequest('PUT', `/api/sessions/${sessionId}/title`, { title: newTitle });
+      } catch (e) {
+        showToast('タイトルの保存に失敗しました', 'error');
+      }
+    }
+  };
+
+  input.addEventListener('blur', finishEdit);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  });
+
+  titleDiv.style.display = 'none';
+  titleDiv.parentNode.insertBefore(input, titleDiv);
+  input.focus();
+  input.select();
 }
 
 async function createNewSession() {
@@ -404,19 +444,10 @@ async function switchSession(sessionId) {
   // サイドバーでのアクティブ状態を更新
   document.querySelectorAll('.session-item').forEach(item => {
     item.classList.remove('active');
+    if (item.dataset.sessionId === sessionId) {
+      item.classList.add('active');
+    }
   });
-  const activeItem = Array.from(document.querySelectorAll('.session-item')).find(item => {
-    return item.querySelector('.session-title').textContent;
-  });
-  if (activeItem) {
-    // 正しい一致を見つける
-    document.querySelectorAll('.session-item').forEach(item => {
-      const titleDiv = item.querySelector('.session-title');
-      if (titleDiv && titleDiv.onclick.toString().includes(sessionId)) {
-        item.classList.add('active');
-      }
-    });
-  }
 
   // チャットメッセージをクリアして、DBからメッセージを読み込む
   const chatContainer = document.getElementById('chatMessages');

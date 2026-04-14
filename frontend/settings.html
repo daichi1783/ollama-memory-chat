@@ -107,6 +107,29 @@
         </div>
       </div>
 
+      <!-- グローバルメモリ管理 -->
+      <div class="settings-section">
+        <div class="settings-section-header">🌐 グローバル記憶（セッションをまたいで保持）</div>
+        <div style="padding:4px 0 12px; font-size:13px; color:var(--text-secondary);">
+          チャット中に <code style="background:#2a2a2a;padding:2px 6px;border-radius:4px;color:#10a37f;">/remember 覚えておいてほしい内容</code> と入力すると保存されます。新しいチャットでも自動的に参照されます。
+        </div>
+        <div id="globalMemoryList" style="padding:4px 0;">
+          <div style="padding:12px;color:var(--text-secondary);font-size:13px;">読み込み中...</div>
+        </div>
+        <div class="settings-row" style="justify-content:space-between; margin-top:8px;">
+          <div>
+            <div class="settings-label">手動で追加</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="addMemoryInput" class="settings-input" style="width:240px;" placeholder="例: 私の名前はDaichi、エンジニアです">
+            <button class="btn btn-primary" onclick="addGlobalMemory()">追加</button>
+          </div>
+        </div>
+        <div class="settings-row" style="justify-content:flex-end;">
+          <button class="btn btn-danger" onclick="clearAllGlobalMemory()">グローバル記憶をすべて削除</button>
+        </div>
+      </div>
+
       <!-- 記憶設定 -->
       <div class="settings-section">
         <div class="settings-section-header">🧠 記憶設定</div>
@@ -122,7 +145,7 @@
         </div>
         <div class="settings-row">
           <div>
-            <div class="settings-label">記憶をすべて削除</div>
+            <div class="settings-label">セッション記憶をすべて削除</div>
             <div class="settings-sublabel">会話履歴とすべてのサマリーを削除します</div>
           </div>
           <button class="btn btn-danger" onclick="clearAllMemory()">すべて削除</button>
@@ -203,6 +226,7 @@
       await loadSettings();
       await loadCommands();
       await loadOllamaModels();
+      await loadGlobalMemory();
       checkStatus();
     });
 
@@ -417,6 +441,66 @@
         showToast('ダウンロードが開始されました。数分後に再読み込みしてください。');
       } catch (e) {
         showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    // ===== グローバルメモリ管理 =====
+    async function loadGlobalMemory() {
+      const list = document.getElementById('globalMemoryList');
+      try {
+        const data = await apiRequest('GET', '/api/global-memory');
+        const items = data.items || [];
+        if (items.length === 0) {
+          list.innerHTML = '<div style="padding:12px;color:var(--text-secondary);font-size:13px;">まだ記憶がありません。/remember コマンドか下のフォームから追加できます。</div>';
+          return;
+        }
+        list.innerHTML = items.map(item => `
+          <div class="command-item" style="align-items:flex-start;">
+            <div class="cmd-info" style="flex:1;">
+              <div style="font-size:14px;color:var(--text-primary);">${escapeHtml(item.content)}</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${item.source === 'manual' ? '手動保存' : 'AI抽出'} · ${item.created_at.slice(0,10)}</div>
+            </div>
+            <button class="cmd-action-btn delete" onclick="deleteGlobalMemoryItem(${item.id})" title="削除">🗑</button>
+          </div>
+        `).join('');
+      } catch (e) {
+        list.innerHTML = '<div style="padding:12px;color:var(--danger);font-size:13px;">読み込みに失敗しました</div>';
+      }
+    }
+
+    async function addGlobalMemory() {
+      const input = document.getElementById('addMemoryInput');
+      const content = input.value.trim();
+      if (!content) { showToast('内容を入力してください', 'error'); return; }
+      try {
+        await apiRequest('POST', '/api/global-memory', { content });
+        input.value = '';
+        showToast('✅ 記憶に追加しました');
+        await loadGlobalMemory();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    async function deleteGlobalMemoryItem(id) {
+      if (!confirm('この記憶を削除しますか？')) return;
+      try {
+        await apiRequest('DELETE', `/api/global-memory/${id}`);
+        showToast('✅ 削除しました');
+        await loadGlobalMemory();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    async function clearAllGlobalMemory() {
+      if (!confirm('グローバル記憶をすべて削除しますか？')) return;
+      try {
+        await apiRequest('DELETE', '/api/global-memory');
+        showToast('✅ グローバル記憶をすべて削除しました');
+        await loadGlobalMemory();
+      } catch (e) {
+        showToast('❌ 削除に失敗しました', 'error');
       }
     }
 

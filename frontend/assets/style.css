@@ -137,6 +137,18 @@ body {
 .session-item:hover .session-delete { opacity: 1; }
 .session-item .session-delete:hover { color: #ff4444; background: rgba(255,68,68,0.1); }
 
+.session-title-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 2px 6px;
+  outline: none;
+  min-width: 0;
+}
+
 .settings-link { margin-top: 4px; }
 
 /* モデルミスマッチアラートバナー */
@@ -310,6 +322,9 @@ body {
   font-size: 15px;
   word-wrap: break-word;
   white-space: pre-wrap;
+  user-select: text;       /* テキスト選択・コピーを許可 */
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .message.user .message-bubble {

@@ -102,6 +102,16 @@ def init_db():
         )
     """)
 
+    # グローバルメモリテーブル（セッションをまたいで保持するユーザー情報）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS global_memory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,         -- 覚えておく内容（例: "名前はDaichi"）
+            source TEXT DEFAULT 'manual',  -- 'manual'（/rememberで保存）or 'auto'（AI抽出）
+            created_at TEXT NOT NULL
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -288,16 +298,20 @@ def compress_memory(session_id: str = "default") -> str:
 
 def build_system_prompt(base_prompt: str = "", session_id: str = "default") -> str:
     """
-    記憶サマリーを含むシステムプロンプトを構築する
+    グローバルメモリ・記憶サマリーを含むシステムプロンプトを構築する
     """
     summary = get_latest_summary(session_id)
+    global_facts = get_global_memory_text()
 
     parts = []
     if base_prompt:
         parts.append(base_prompt)
 
+    if global_facts:
+        parts.append(f"【ユーザーについての情報】\n以下はユーザーについて覚えておくべき情報です。これを踏まえて自然に会話してください：\n{global_facts}")
+
     if summary:
-        parts.append(f"【あなたの記憶】\n以下はこれまでの会話の要約です。これを踏まえて返答してください：\n{summary}")
+        parts.append(f"【このセッションの記憶】\n以下はこのセッションでの会話の要約です：\n{summary}")
 
     return "\n\n".join(parts) if parts else "あなたは親切で知識豊富なAIアシスタントです。"
 
@@ -317,6 +331,56 @@ def get_all_summaries(session_id: str = "default") -> list:
     ).fetchall()
     conn.close()
     return [{"summary": r["summary"], "created_at": r["created_at"], "message_count": r["message_count"]} for r in rows]
+
+# ===== グローバルメモリ（クロスセッション記憶）=====
+
+def add_global_memory(content: str, source: str = "manual") -> dict:
+    """グローバルメモリに項目を追加する"""
+    content = content.strip()
+    if not content:
+        return {"success": False, "message": "内容が空です"}
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO global_memory (content, source, created_at) VALUES (?, ?, ?)",
+        (content, source, datetime.now().isoformat())
+    )
+    conn.commit()
+    row = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return {"success": True, "id": row, "content": content}
+
+def get_global_memory() -> list:
+    """グローバルメモリ一覧を返す（新しい順）"""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT id, content, source, created_at FROM global_memory ORDER BY id DESC"
+    ).fetchall()
+    conn.close()
+    return [{"id": r["id"], "content": r["content"], "source": r["source"], "created_at": r["created_at"]} for r in rows]
+
+def delete_global_memory_item(item_id: int) -> bool:
+    """グローバルメモリの1件を削除する"""
+    conn = get_db_connection()
+    cursor = conn.execute("DELETE FROM global_memory WHERE id = ?", (item_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
+def clear_global_memory():
+    """グローバルメモリをすべて削除する"""
+    conn = get_db_connection()
+    conn.execute("DELETE FROM global_memory")
+    conn.commit()
+    conn.close()
+
+def get_global_memory_text() -> str:
+    """グローバルメモリをシステムプロンプト用テキストに変換する"""
+    items = get_global_memory()
+    if not items:
+        return ""
+    return "\n".join(f"• {item['content']}" for item in reversed(items))
+
 
 # 初期化（初回インポート時に自動実行）
 # ここではコメントアウト。アプリケーション起動時に main.py で明示的に呼ぶ
