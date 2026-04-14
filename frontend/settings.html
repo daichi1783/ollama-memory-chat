@@ -10,8 +10,29 @@
   <!-- サイドバー -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1>Memoria</h1>
-      <div class="version">v0.1.0-beta</div>
+      <div class="sidebar-logo-wrap">
+        <svg class="memoria-logo" width="36" height="36" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#89b4fa"/>
+      <stop offset="50%" stop-color="#cba6f7"/>
+      <stop offset="100%" stop-color="#f5c2e7"/>
+    </linearGradient>
+  </defs>
+  <circle cx="40" cy="40" r="36" fill="url(#logoGrad)"/>
+  <circle cx="40" cy="40" r="20" fill="white" opacity="0.15"/>
+  <circle cx="40" cy="40" r="10" fill="white" opacity="0.2"/>
+  <circle cx="40" cy="40" r="4" fill="white" opacity="0.9"/>
+  <circle cx="40" cy="18" r="3.5" fill="white" opacity="0.8"/>
+  <circle cx="62" cy="40" r="3.5" fill="white" opacity="0.8"/>
+  <circle cx="40" cy="62" r="3.5" fill="white" opacity="0.8"/>
+  <circle cx="18" cy="40" r="3.5" fill="white" opacity="0.8"/>
+</svg>
+        <div>
+          <h1>Memoria</h1>
+          <div class="version">v1.0.0</div>
+        </div>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <a href="/" class="nav-item">
@@ -268,10 +289,7 @@
           <div class="settings-label" data-i18n="settings.appinfo.author">作成者</div>
           <div style="color:var(--text-secondary); font-size:14px;">Daichi.T</div>
         </div>
-        <div class="settings-row">
-          <div class="settings-label" data-i18n="settings.appinfo.price">価格</div>
-          <div style="color:var(--text-secondary); font-size:14px;">$10</div>
-        </div>
+
         <div class="settings-row">
           <div>
             <div class="settings-label" data-i18n="settings.appinfo.privacy.label">プライバシー</div>
