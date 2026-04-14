@@ -107,17 +107,21 @@ class CommandUpdate(BaseModel):
     description: str = Field(..., min_length=1, max_length=500)
 
 class AIEngineUpdate(BaseModel):
-    engine: str           # "ollama" or "openai_compatible"
+    engine: str           # "ollama" / "openai_compatible" / "claude" / "gemini"
     ollama_endpoint: Optional[str] = Field(None, max_length=300)
     ollama_model: Optional[str] = Field(None, max_length=100)
     openai_endpoint: Optional[str] = Field(None, max_length=300)
     openai_model: Optional[str] = Field(None, max_length=100)
     openai_api_key: Optional[str] = Field(None, max_length=500)
+    claude_api_key: Optional[str] = Field(None, max_length=500)
+    claude_model: Optional[str] = Field(None, max_length=100)
+    gemini_api_key: Optional[str] = Field(None, max_length=500)
+    gemini_model: Optional[str] = Field(None, max_length=100)
 
     @validator('engine')
     def validate_engine(cls, v):
-        if v not in ["ollama", "openai_compatible"]:
-            raise ValueError('エンジンは "ollama" または "openai_compatible" である必要があります')
+        if v not in ["ollama", "openai_compatible", "claude", "gemini"]:
+            raise ValueError('エンジンは "ollama" / "openai_compatible" / "claude" / "gemini" のいずれかです')
         return v
 
     @validator('ollama_endpoint', 'openai_endpoint', pre=True, always=True)
@@ -370,9 +374,15 @@ async def get_settings():
     config_path = _config_path()
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
-    # APIキーはマスク
-    if config.get("ai", {}).get("openai_api_key"):
-        config["ai"]["openai_api_key"] = "***設定済み***"
+    ai = config.get("ai", {})
+    # APIキーはマスク（空なら空のまま、設定済みなら***に）
+    for key in ["openai_api_key", "claude_api_key", "gemini_api_key"]:
+        if ai.get(key):
+            ai[key] = "***設定済み***"
+    # 新フィールドが古いconfigになければ空文字を補完
+    for k in ["claude_api_key", "claude_model", "gemini_api_key", "gemini_model"]:
+        if k not in ai:
+            ai[k] = ""
     return config
 
 @app.post("/api/settings/ai")
@@ -394,6 +404,20 @@ async def update_ai_settings(settings: AIEngineUpdate):
         config["ai"]["openai_model"] = settings.openai_model
     if settings.openai_api_key:
         config["ai"]["openai_api_key"] = settings.openai_api_key
+    # Claude
+    if settings.claude_api_key:
+        config["ai"]["claude_api_key"] = settings.claude_api_key
+    if settings.claude_model:
+        config["ai"]["claude_model"] = settings.claude_model
+    # Gemini
+    if settings.gemini_api_key:
+        config["ai"]["gemini_api_key"] = settings.gemini_api_key
+    if settings.gemini_model:
+        config["ai"]["gemini_model"] = settings.gemini_model
+    # 新フィールドが config.yaml になければ初期値を設定
+    for k in ["claude_api_key", "claude_model", "gemini_api_key", "gemini_model"]:
+        if k not in config["ai"]:
+            config["ai"][k] = ""
 
     with open(config_path, "w") as f:
         yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
@@ -405,11 +429,42 @@ async def get_status():
     """Ollamaの起動状態などシステム状態を返す"""
     ollama_running = oc.is_ollama_running()
     engine = oc.get_client_type()
+    model_label = oc.get_current_model_label()
     return {
         "status": "ok",
         "engine": engine,
         "ollama_running": ollama_running,
+        "model_label": model_label,
     }
+
+class EngineSwitch(BaseModel):
+    engine: str
+    model: Optional[str] = None
+
+@app.post("/api/switch-engine")
+async def switch_engine(req: EngineSwitch):
+    """チャット画面からエンジンを素早く切り替える"""
+    import yaml
+    valid_engines = ["ollama", "openai_compatible", "claude", "gemini"]
+    if req.engine not in valid_engines:
+        raise HTTPException(status_code=400, detail=f"無効なエンジン: {req.engine}")
+    config_path = _config_path()
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    config["ai"]["engine"] = req.engine
+    # モデル指定があれば合わせて更新
+    if req.model:
+        model_key = {
+            "ollama": "ollama_model",
+            "openai_compatible": "openai_model",
+            "claude": "claude_model",
+            "gemini": "gemini_model",
+        }.get(req.engine)
+        if model_key:
+            config["ai"][model_key] = req.model
+    with open(config_path, "w") as f:
+        yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+    return {"success": True, "engine": req.engine, "model_label": oc.get_current_model_label()}
 
 # ===== Ollama セットアップ管理API =====
 

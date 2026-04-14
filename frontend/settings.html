@@ -51,6 +51,8 @@
           <select id="engineSelect" class="settings-input" onchange="onEngineChange()">
             <option value="ollama">Ollama（ローカル）</option>
             <option value="openai_compatible">OpenAI互換API（クラウド）</option>
+            <option value="claude">Claude (Anthropic)</option>
+            <option value="gemini">Gemini (Google)</option>
           </select>
         </div>
 
@@ -89,7 +91,7 @@
           <div class="settings-row">
             <div>
               <div class="settings-label">モデル名</div>
-              <div class="settings-sublabel">例: gpt-4o, claude-3-opus</div>
+              <div class="settings-sublabel">例: gpt-4o, gpt-4-turbo</div>
             </div>
             <input type="text" id="openaiModel" class="settings-input" placeholder="gpt-4o">
           </div>
@@ -99,6 +101,50 @@
               <div class="settings-sublabel">ローカルに保存・外部送信なし</div>
             </div>
             <input type="password" id="openaiApiKey" class="settings-input" placeholder="sk-...">
+          </div>
+        </div>
+
+        <!-- Claude (Anthropic) 設定 -->
+        <div id="claudeSettings" style="display:none;">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">モデル</div>
+              <div class="settings-sublabel">使用するClaudeモデルを選択</div>
+            </div>
+            <select id="claudeModel" class="settings-input">
+              <option value="claude-sonnet-4-6">claude-sonnet-4-6（バランス型・推奨）</option>
+              <option value="claude-opus-4-6">claude-opus-4-6（最高性能）</option>
+              <option value="claude-haiku-4-5-20251001">claude-haiku-4-5（高速・軽量）</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Anthropic APIキー</div>
+              <div class="settings-sublabel">console.anthropic.comで取得 · ローカルに保存</div>
+            </div>
+            <input type="password" id="claudeApiKey" class="settings-input" placeholder="sk-ant-...">
+          </div>
+        </div>
+
+        <!-- Gemini (Google) 設定 -->
+        <div id="geminiSettings" style="display:none;">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">モデル</div>
+              <div class="settings-sublabel">使用するGeminiモデルを選択</div>
+            </div>
+            <select id="geminiModel" class="settings-input">
+              <option value="gemini-2.0-flash">gemini-2.0-flash（高速・推奨）</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro（高性能）</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash（軽量）</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Google API キー</div>
+              <div class="settings-sublabel">aistudio.google.comで取得 · ローカルに保存</div>
+            </div>
+            <input type="password" id="geminiApiKey" class="settings-input" placeholder="AIza...">
           </div>
         </div>
 
@@ -219,7 +265,7 @@
 
   <script src="/assets/app.js"></script>
   <script>
-    const API_BASE = 'http://127.0.0.1:8765';
+    // NOTE: API_BASE は app.js で定義済み。ここでは再宣言しない。
 
     // 設定画面の初期化
     document.addEventListener('DOMContentLoaded', async () => {
@@ -234,6 +280,11 @@
       const engine = document.getElementById('engineSelect').value;
       document.getElementById('ollamaSettings').style.display = engine === 'ollama' ? '' : 'none';
       document.getElementById('openaiSettings').style.display = engine === 'openai_compatible' ? '' : 'none';
+      document.getElementById('claudeSettings').style.display = engine === 'claude' ? '' : 'none';
+      document.getElementById('geminiSettings').style.display = engine === 'gemini' ? '' : 'none';
+      // Ollamaモデル管理セクションはOllama選択時のみ表示
+      const ollamaSection = document.getElementById('ollamaModelSection');
+      if (ollamaSection) ollamaSection.style.display = engine === 'ollama' ? '' : 'none';
     }
 
     // インストール済みモデルをドロップダウンに反映
@@ -288,6 +339,16 @@
         // モデルはドロップダウン読み込み後に反映
         document.getElementById('openaiEndpoint').value = ai.openai_endpoint || '';
         document.getElementById('openaiModel').value = ai.openai_model || '';
+        // Claude設定
+        const claudeModelSel = document.getElementById('claudeModel');
+        if (claudeModelSel && ai.claude_model) claudeModelSel.value = ai.claude_model;
+        // Gemini設定
+        const geminiModelSel = document.getElementById('geminiModel');
+        if (geminiModelSel && ai.gemini_model) geminiModelSel.value = ai.gemini_model;
+        // APIキーはマスクされるためplaceholderで示す（空でなければ設定済みと表示）
+        if (ai.openai_api_key) document.getElementById('openaiApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
+        if (ai.claude_api_key) document.getElementById('claudeApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
+        if (ai.gemini_api_key) document.getElementById('geminiApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
         document.getElementById('compressionThreshold').value = config.memory?.compression_threshold || 10;
         onEngineChange();
         // Ollamaドロップダウンを初期化
@@ -299,19 +360,35 @@
 
     async function saveAISettings() {
       const engine = document.getElementById('engineSelect').value;
-      const apiKey = document.getElementById('openaiApiKey').value;
+      const openaiApiKey = document.getElementById('openaiApiKey').value;
+      const claudeApiKey = document.getElementById('claudeApiKey').value;
+      const geminiApiKey = document.getElementById('geminiApiKey').value;
+
+      const body = {
+        engine,
+        ollama_endpoint: document.getElementById('ollamaEndpoint').value,
+        ollama_model: document.getElementById('ollamaModel').value,
+        openai_endpoint: document.getElementById('openaiEndpoint').value,
+        openai_model: document.getElementById('openaiModel').value,
+        claude_model: document.getElementById('claudeModel').value,
+        gemini_model: document.getElementById('geminiModel').value,
+      };
+      // APIキーは入力があった場合のみ送信（空欄 = 変更なし）
+      if (openaiApiKey) body.openai_api_key = openaiApiKey;
+      if (claudeApiKey) body.claude_api_key = claudeApiKey;
+      if (geminiApiKey) body.gemini_api_key = geminiApiKey;
 
       try {
-        await apiRequest('POST', '/api/settings/ai', {
-          engine,
-          ollama_endpoint: document.getElementById('ollamaEndpoint').value,
-          ollama_model: document.getElementById('ollamaModel').value,
-          openai_endpoint: document.getElementById('openaiEndpoint').value,
-          openai_model: document.getElementById('openaiModel').value,
-          openai_api_key: apiKey || undefined,
-        });
+        await apiRequest('POST', '/api/settings/ai', body);
         showToast('✅ 設定を保存しました');
+        // 入力欄をクリア
         document.getElementById('openaiApiKey').value = '';
+        document.getElementById('claudeApiKey').value = '';
+        document.getElementById('geminiApiKey').value = '';
+        // 保存後にplaceholderを更新
+        if (openaiApiKey) document.getElementById('openaiApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
+        if (claudeApiKey) document.getElementById('claudeApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
+        if (geminiApiKey) document.getElementById('geminiApiKey').placeholder = '（設定済み - 変更する場合のみ入力）';
       } catch (e) {
         showToast('❌ 保存に失敗しました: ' + e.message, 'error');
       }

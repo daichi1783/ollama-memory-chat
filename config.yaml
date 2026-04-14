@@ -5,12 +5,16 @@ app:
   port: 8765
 
 ai:
-  engine: "ollama"       # "ollama" または "openai_compatible"
+  engine: "ollama"       # "ollama" / "openai_compatible" / "claude" / "gemini"
   ollama_endpoint: "http://localhost:11434"
-  ollama_model: "gemma3:4b"  # ← ユーザーのモデル名
+  ollama_model: "gemma3:4b"
   openai_endpoint: ""
   openai_model: ""
-  openai_api_key: ""     # 値は空のまま。ユーザーがUIから設定する
+  openai_api_key: ""
+  claude_api_key: ""
+  claude_model: "claude-sonnet-4-6"
+  gemini_api_key: ""
+  gemini_model: "gemini-2.0-flash"
 
 memory:
   compression_threshold: 10   # 何往復で圧縮するか

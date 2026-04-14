@@ -7,6 +7,7 @@ let isLoading = false;
 let currentSessionId = null;
 let _mismatchedModelName = null;
 let _pullPollInterval = null;
+let _currentEngine = 'ollama'; // 現在のエンジン状態
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -40,6 +41,7 @@ async function checkStatus() {
   try {
     const status = await apiRequest('GET', '/api/status');
     updateStatusIndicator(status.ollama_running, status.engine);
+    updateEngineSwitchLabel(status.engine, status.model_label);
   } catch (e) {
     updateStatusIndicator(false, 'unknown');
   }
@@ -53,9 +55,65 @@ function updateStatusIndicator(ollamaRunning, engine) {
   if (engine === 'ollama') {
     dot.className = ollamaRunning ? 'status-dot online' : 'status-dot';
     text.textContent = ollamaRunning ? 'Ollama: 接続中' : 'Ollama: 未起動';
+  } else if (engine === 'claude') {
+    dot.className = 'status-dot online';
+    text.textContent = 'Claude: 設定済み';
+  } else if (engine === 'gemini') {
+    dot.className = 'status-dot online';
+    text.textContent = 'Gemini: 設定済み';
   } else {
     dot.className = 'status-dot online';
     text.textContent = 'クラウドAI: 設定済み';
+  }
+}
+
+// ===== エンジン切り替えUI =====
+function updateEngineSwitchLabel(engine, modelLabel) {
+  _currentEngine = engine || 'ollama';
+  const label = document.getElementById('engineSwitchLabel');
+  if (!label) return;
+
+  const icons = { ollama: '🖥️', openai_compatible: '⚡', claude: '🟠', gemini: '💎' };
+  const icon = icons[engine] || '🤖';
+  const display = modelLabel || engine || '不明';
+  label.textContent = `${icon} ${display}`;
+
+  // ドロップダウンのアクティブ状態を更新
+  document.querySelectorAll('.engine-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.engine === engine);
+  });
+}
+
+function toggleEngineSwitchDropdown() {
+  const dropdown = document.getElementById('engineSwitchDropdown');
+  if (!dropdown) return;
+  const isOpen = dropdown.style.display !== 'none';
+  dropdown.style.display = isOpen ? 'none' : 'block';
+}
+
+// ドロップダウンの外クリックで閉じる
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('engineSwitchWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const dropdown = document.getElementById('engineSwitchDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+  }
+});
+
+async function switchEngine(engine) {
+  // ドロップダウンを閉じる
+  const dropdown = document.getElementById('engineSwitchDropdown');
+  if (dropdown) dropdown.style.display = 'none';
+
+  if (engine === _currentEngine) return; // 同じなら何もしない
+
+  try {
+    const data = await apiRequest('POST', '/api/switch-engine', { engine });
+    // ラベル更新（model_labelはstatusから取得するため、再チェック）
+    await checkStatus();
+    showToast(`✅ エンジンを ${data.engine} に切り替えました（チャット履歴は保持されます）`);
+  } catch (e) {
+    showToast(`❌ 切り替え失敗: ${e.message}`, 'error');
   }
 }
 
