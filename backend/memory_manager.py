@@ -11,11 +11,19 @@ from pathlib import Path
 from datetime import datetime
 import yaml
 
-CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+# PyInstallerバンドル対応: OMCHAT_BASE_DIR / OMCHAT_DATA_DIR 環境変数を優先
+_base = Path(os.environ.get('OMCHAT_BASE_DIR', str(Path(__file__).parent.parent)))
+_data = Path(os.environ.get('OMCHAT_DATA_DIR', str(_base / 'data')))
+# ユーザー設定 > バンドルデフォルト の順で読む
+CONFIG_PATH = (_data / "config.yaml") if (_data / "config.yaml").exists() else (_base / "config.yaml")
 # テスト環境では別のDBパスを使用
-import os
 _is_test = os.environ.get("TEST_ENV") == "1"
-DB_PATH = Path(__file__).parent.parent / ("data" if not _is_test else "/tmp") / ("test_chat_memory.db" if _is_test else "chat_memory.db")
+if _is_test:
+    DB_PATH = Path("/tmp/test_chat_memory.db")
+else:
+    # データディレクトリを確保してからDBパスを設定
+    _data.mkdir(parents=True, exist_ok=True)
+    DB_PATH = _data / "chat_memory.db"
 
 def load_config():
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:

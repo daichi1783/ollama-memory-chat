@@ -27,8 +27,17 @@ import ollama_setup as os_mgr
 # DBの初期化（アプリケーション起動時）
 mm.init_db()
 
-# フロントエンドのパス
-FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+# PyInstallerバンドル対応: OMCHAT_BASE_DIR 環境変数を優先
+_base = Path(os.environ.get('OMCHAT_BASE_DIR', str(Path(__file__).parent.parent)))
+_data = Path(os.environ.get('OMCHAT_DATA_DIR', str(_base / 'data')))
+
+# フロントエンドのパス（バンドル内でも通常起動でも正しく解決）
+FRONTEND_DIR = _base / "frontend"
+
+def _config_path() -> Path:
+    """ユーザー設定 > バンドルデフォルト の順で config.yaml を返す"""
+    user_cfg = _data / "config.yaml"
+    return user_cfg if user_cfg.exists() else _base / "config.yaml"
 
 app = FastAPI(
     title="OllamaMemoryChat API",
@@ -252,7 +261,7 @@ async def delete_command(name: str):
 async def get_settings():
     """現在の設定を返す（APIキーは除く）"""
     import yaml
-    config_path = Path(__file__).parent.parent / "config.yaml"
+    config_path = _config_path()
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     # APIキーはマスク
@@ -264,7 +273,7 @@ async def get_settings():
 async def update_ai_settings(settings: AIEngineUpdate):
     """AI設定を更新する"""
     import yaml
-    config_path = Path(__file__).parent.parent / "config.yaml"
+    config_path = _config_path()
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
@@ -382,7 +391,7 @@ async def select_model(body: dict):
         raise HTTPException(status_code=400, detail="モデル名が必要です")
 
     import yaml
-    config_path = Path(__file__).parent.parent / "config.yaml"
+    config_path = _config_path()
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
@@ -422,7 +431,7 @@ async def serve_settings():
 def start_server(port: int = 8765):
     """サーバーを起動する"""
     import yaml
-    config_path = Path(__file__).parent.parent / "config.yaml"
+    config_path = _config_path()
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     port = config.get("app", {}).get("port", 8765)
