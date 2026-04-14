@@ -39,6 +39,31 @@ def _config_path() -> Path:
     user_cfg = _data / "config.yaml"
     return user_cfg if user_cfg.exists() else _base / "config.yaml"
 
+def _generate_smart_title(message: str, max_len: int = 20) -> str:
+    """Fix⑨: メッセージから自然なタイトルを生成する。
+    句読点・スペース・改行で切り、最大 max_len 文字で省略。
+    コマンド（/から始まる）は除いてタイトル化する。
+    """
+    # コマンドプレフィックスを除去
+    text = message.strip()
+    if text.startswith('/'):
+        parts = text.split(None, 1)
+        text = parts[1].strip() if len(parts) > 1 else text
+
+    # 最初の文（句読点・改行・スペースで分割）- re はモジュールレベルでインポート済み
+    m = re.split(r'[。！？\n\r.!?]', text)
+    first = m[0].strip() if m else text.strip()
+
+    if not first:
+        first = text.strip()
+
+    if len(first) <= max_len:
+        return first or "新しいチャット"
+
+    # max_len 文字で切り「...」を付ける
+    return first[:max_len - 1] + "…"
+
+
 app = FastAPI(
     title="Memoria API",
     version="0.1.0",
@@ -140,8 +165,8 @@ async def chat_endpoint(req: ChatRequest):
         mm.ensure_session_exists(req.session_id)
         existing_messages = mm.get_recent_messages(req.session_id, limit=1)
         if not existing_messages:
-            # このセッションは初めて。タイトルを設定する
-            title = req.message[:20]
+            # このセッションは初めて。タイトルを設定する（Fix⑨: スマートタイトル生成）
+            title = _generate_smart_title(req.message)
             mm.update_session_title(req.session_id, title)
 
         command_name, body = cm.parse_command(req.message)

@@ -1028,3 +1028,118 @@ body { font-size: var(--base-font-size); }
 }
 .font-size-btn.active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .font-size-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Fix⑦: セッション削除 Undo バー ===== */
+.undo-delete-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 9999;
+}
+.undo-delete-bar.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.undo-delete-bar button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.undo-delete-bar button:hover { opacity: 0.85; }
+
+/* ===== Fix⑧: ローディング中エンジン名表示 ===== */
+.loading-engine-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* ===== Fix⑪: コマンドサジェスト例文 ===== */
+.cmd-example {
+  color: var(--text-secondary);
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* ===== Fix⑫: エラー時 Ollama フォールバックボタン ===== */
+.error-fallback { margin-top: 8px; }
+.fallback-ollama-btn {
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.fallback-ollama-btn:hover { background: var(--accent); color: white; }
+
+/* ===== Fix⑬: グローバルメモリバッジ ===== */
+.memory-count-wrap {
+  padding: 0 12px 8px;
+}
+.global-memory-badge {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* ===== Fix⑭: 「最新メッセージへ」スクロールボタン ===== */
+.scroll-to-bottom-btn {
+  position: absolute;
+  bottom: 100px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scroll-to-bottom-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.scroll-to-bottom-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}

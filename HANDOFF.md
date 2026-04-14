@@ -93,59 +93,29 @@ ollama-memory-chat/
 
 ---
 
-## 次セッションでやること（UX改善 残り10項目）
+## 実装済み機能（続き）—— 第2セッション（2026-04-14）で完了
 
-優先度順に実装してください。
+### UX改善 Fix⑦〜⑯（全10項目を完了）
 
-### Fix⑦: セッション削除の「取り消し」機能
-- 削除後5秒間だけ「↩️ 取り消し」ボタンをサイドバー下部に表示
-- タイムアウトしたら本当に削除（今は削除が即時確定）
-- 実装場所: `frontend/assets/app.js` の `deleteSession()` を修正
+| # | 内容 | 実装場所 |
+|---|---|---|
+| ⑦ | セッション削除の取り消し（5秒 Undo バー） | `app.js` `deleteSession()` + 新関数群 |
+| ⑧ | ローディング中に「Claude が考えています...」表示 | `app.js` `appendLoading()` |
+| ⑨ | セッションタイトルのスマート生成（句読点で自然に切る） | `backend/main.py` `_generate_smart_title()` |
+| ⑩ | 設定保存後にエンジンラベルを即更新 | `settings.html` `_saveAISettingsCore()` |
+| ⑪ | コマンドサジェストに使い方の例文を追加 | `app.js` `COMMAND_EXAMPLES` + `showSuggest()` |
+| ⑫ | クラウドAI失敗時に「Ollamaに切り替える」ボタン表示 | `app.js` `appendMessage()` |
+| ⑬ | サイドバーに「🧠 記憶: N件」バッジ表示 | `index.html` + `app.js` + `style.css` |
+| ⑭ | 「最新メッセージへ ↓」スクロールボタン | `app.js` + `style.css` |
+| ⑮ | APIキーのフォーマット検証（sk-ant- / AIza） | `settings.html` `_validateApiKey()` |
+| ⑯ | カスタムコマンド追加フォームに説明文と例を追加 | `settings.html` |
 
-### Fix⑧: ローディング中のメッセージ改善
-- 「考えています...」テキストをタイピングアニメーション下に追加
-- エンジン名も表示（例：「Claude が考えています...」）
-- 実装場所: `frontend/assets/app.js` の `appendLoading()` + i18n キー追加
+## 次セッションでやること
 
-### Fix⑨: セッションタイトルの自動スマート生成
-- 現在は最初のメッセージ先頭20文字で切れる
-- 改善案：AIに「この会話を5文字以内で表すタイトルを生成して」と自動依頼
-- または単純改善として：句読点・スペースで自然に切る + 「...」省略
-- 実装場所: `backend/main.py` のチャットエンドポイント（セッション作成部分）
-
-### Fix⑩: 設定保存後、チャット画面のエンジンラベルを即更新
-- 保存後に `/api/status` を再取得してラベルを更新する
-- 実装場所: `frontend/settings.html` の `_saveAISettingsCore()` 末尾に `if (typeof checkStatus === 'function') checkStatus();` を追加（簡単）
-
-### Fix⑪: コマンドサジェストに使い方の例文を追加
-- `/english こんにちは → "Hello"` のように入力例を示す
-- 実装場所: `frontend/assets/app.js` の `showSuggest()` の description 表示を改善
-
-### Fix⑫: クラウドAI接続失敗時にOllamaへの切り替え提案
-- エラーバブル内に「Ollamaに切り替える」ボタンを表示
-- クリックで `switchEngine('ollama')` を呼ぶ
-- 実装場所: `frontend/assets/app.js` の `appendMessage()` エラー表示部分
-
-### Fix⑬: サイドバーに「記憶: N件」バッジを表示
-- グローバルメモリの件数をサイドバーのステータス近くに小さく表示
-- `/api/global-memory` を初回と `/remember` 実行後にポーリング
-- 実装場所: `frontend/index.html` + `app.js`
-
-### Fix⑭: 「最新メッセージへ」スクロールボタン
-- チャット欄を上にスクロールしているとき、右下に「↓」ボタンを表示
-- クリックで最下部にスクロール
-- 実装場所: `frontend/assets/app.js` + `style.css`
-
-### Fix⑮: APIキーのフォーマット検証
-- `claude_api_key` 入力時: `sk-ant-` で始まるか確認
-- `gemini_api_key` 入力時: `AIza` で始まるか確認
-- 不正なら保存前にインライン警告表示
-- 実装場所: `frontend/settings.html` の `_saveAISettingsCore()` 内
-
-### Fix⑯: カスタムコマンド追加フォームの説明文を改善
-- 「コマンドを追加すると何ができるか」の一言説明と例を追加
-- 例：「追加したコマンドは /コマンド名 で使えます。例: /summarize → 文章を要約」
-- 実装場所: `frontend/settings.html` の「コマンド追加フォーム」セクション上部
+現在 **未実装のバグ・改善項目はなし**。今後の候補：
+- DMGビルド後の動作確認テスト
+- Notionへの仕様書書き出し（`sendtonotion` スキル使用）
+- iPhoneアプリ開発（NEXT_PROJECT.md 参照）
 
 ---
 
@@ -193,4 +163,4 @@ bash build_app.sh
 
 ---
 
-*最終更新: 2026-04-14 — セッション移行時に作成*
+*最終更新: 2026-04-14 — Fix⑦〜⑯ 全10項目を第2セッションで完了*

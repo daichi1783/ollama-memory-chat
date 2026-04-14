@@ -149,13 +149,36 @@ async function switchEngine(engine) {
 }
 
 // ===== コマンド名読み込み =====
+// コマンド詳細のキャッシュ（showSuggest がキー入力ごとにAPIを叩かないようにする）
+let _commandDetailCache = {};
+
 async function loadCommandNames() {
   try {
-    const data = await apiRequest('GET', '/api/commands/names');
-    commandNames = data.names || [];
+    // 名前リストと詳細を同時に取得してキャッシュ
+    const [namesData, detailData] = await Promise.all([
+      apiRequest('GET', '/api/commands/names'),
+      apiRequest('GET', '/api/commands'),
+    ]);
+    commandNames = namesData.names || [];
+    _commandDetailCache = {};
+    (detailData.commands || []).forEach(cmd => {
+      _commandDetailCache[cmd.name] = cmd.description;
+    });
   } catch (e) {
     commandNames = [];
+    _commandDetailCache = {};
   }
+}
+
+// コマンドキャッシュを再読み込みする（コマンド追加・削除後に呼ぶ）
+async function refreshCommandCache() {
+  try {
+    const data = await apiRequest('GET', '/api/commands');
+    _commandDetailCache = {};
+    (data.commands || []).forEach(cmd => {
+      _commandDetailCache[cmd.name] = cmd.description;
+    });
+  } catch (e) {}
 }
 
 // ===== チャット =====
@@ -182,6 +205,8 @@ function insertCommand(cmd) {
   input.value = cmd + ' ';
   input.focus();
   hideWelcome();
+  // プログラム的な value 変更は input イベントを発火しないので手動更新
+  updateSendButtonState();
 }
 
 function hideWelcome() {
@@ -222,13 +247,17 @@ async function sendMessage() {
       commandUsed: data.command_used,
       memoryCompressed: data.memory_compressed
     });
+    // Fix⑬: /remember 実行後にバッジ更新
+    if (data.command_used === 'remember') updateGlobalMemoryBadge();
   } catch (e) {
     removeLoading(loadingId);
-    appendMessage('ai', `❌ エラー: ${e.message}`, { isError: true });
+    // Fix⑫: クラウドAI接続失敗時にOllamaへの切り替え提案
+    const isCloudEngine = ['claude', 'gemini', 'openai_compatible'].includes(_currentEngine);
+    appendMessage('ai', `❌ エラー: ${e.message}`, { isError: true, showOllamaFallback: isCloudEngine });
   } finally {
     isLoading = false;
     toggleSendButton(true);
-  updateSendButtonState();
+    updateSendButtonState();
   }
 }
 
@@ -249,6 +278,12 @@ function appendMessage(role, content, meta = {}) {
   }
   if (meta.commandUsed) {
     badges += `<div class="memory-badge">⚡ /${meta.commandUsed}</div>`;
+  }
+  // Fix⑫: クラウドAI失敗時にOllamaへの切り替え提案
+  if (meta.isError && meta.showOllamaFallback) {
+    badges += `<div class="memory-badge error-fallback">
+      <button class="fallback-ollama-btn" onclick="switchEngine('ollama')">🖥️ Ollamaに切り替える</button>
+    </div>`;
   }
 
   const copyBtn = role === 'ai' ? `<button class="msg-copy-btn" onclick="copyMessageText(this)" title="コピー">⎘</button>` : '';
@@ -290,12 +325,23 @@ function renderText(text) {
   return escaped;
 }
 
+// Fix⑧: ローディング中のメッセージ改善（エンジン名表示）
 function appendLoading() {
   const chat = document.getElementById('chatMessages');
   const id = 'loading-' + Date.now();
   const div = document.createElement('div');
   div.id = id;
   div.className = 'message ai';
+
+  // エンジン名ラベル
+  const engineNames = {
+    ollama: 'Ollama',
+    claude: 'Claude',
+    gemini: 'Gemini',
+    openai_compatible: 'AI',
+  };
+  const engineLabel = engineNames[_currentEngine] || 'AI';
+
   div.innerHTML = `
     <div class="avatar ai">${ORBITAL_AVATAR_SVG}</div>
     <div class="message-content">
@@ -304,8 +350,11 @@ function appendLoading() {
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
       </div>
+      <div class="loading-engine-label"></div>
     </div>
   `;
+  // textContent で安全にエンジン名を設定（XSS対策）
+  div.querySelector('.loading-engine-label').textContent = `${engineLabel} が考えています...`;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   return id;
@@ -384,27 +433,37 @@ function handleCommandSuggest(value) {
   showSuggest(matched);
 }
 
-async function showSuggest(names) {
+// Fix⑪: コマンドサジェストに使い方の例文を追加
+const COMMAND_EXAMPLES = {
+  english:   '例: /english こんにちは → "Hello"',
+  japanese:  '例: /japanese Hello → 「こんにちは」',
+  spanish:   '例: /spanish ありがとう → "Gracias"',
+  cal:       '例: /cal 2024-04-15 から今日まで',
+  remember:  '例: /remember 私はエンジニアで猫が好きです',
+  memory:    '最近の記憶サマリーを確認',
+  clear:     '現在のセッション会話をリセット',
+  help:      '使えるコマンド一覧を表示',
+};
+
+function showSuggest(names) {
   const suggest = document.getElementById('commandSuggest');
   if (!suggest) return;
 
-  // コマンドの詳細情報を取得
-  let commandMap = {};
-  try {
-    const data = await apiRequest('GET', '/api/commands');
-    data.commands.forEach(cmd => {
-      commandMap[cmd.name] = cmd.description;
-    });
-  } catch (e) {}
-
-  suggest.innerHTML = names.map((name, i) => `
+  // キャッシュから詳細情報を取得（API呼び出しなし）
+  // desc は escapeHtml でサニタイズ（ユーザー定義コマンドの説明文にHTMLが含まれる可能性）
+  suggest.innerHTML = names.map((name, i) => {
+    const rawDesc = _commandDetailCache[name] || '';
+    const desc = escapeHtml(rawDesc);
+    const example = COMMAND_EXAMPLES[name] ? escapeHtml(COMMAND_EXAMPLES[name]) : '';
+    return `
     <div class="suggest-item ${i === 0 ? 'selected' : ''}"
-         onclick="selectSuggest('${name}')"
+         onclick="selectSuggest('${escapeHtml(name)}')"
          data-index="${i}">
-      <span class="cmd-name">/${name}</span>
-      <span class="cmd-desc">${commandMap[name] || ''}</span>
+      <span class="cmd-name">/${escapeHtml(name)}</span>
+      <span class="cmd-desc">${desc}${example ? `<span class="cmd-example"> — ${example}</span>` : ''}</span>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   suggest.classList.add('visible');
   suggestSelectedIndex = 0;
@@ -443,6 +502,8 @@ function selectSuggest(name) {
   if (input) {
     input.value = `/${name} `;
     input.focus();
+    // プログラム的な value 変更は input イベントを発火しないので手動更新
+    updateSendButtonState();
   }
   hideSuggest();
 }
@@ -569,17 +630,89 @@ async function switchSession(sessionId) {
   }
 }
 
+// Fix⑦: セッション削除の「取り消し」機能
+let _pendingDeleteId = null;
+let _pendingDeleteTimer = null;
+let _pendingDeleteItem = null; // DOM要素を保持
+
 async function deleteSession(sessionId, e) {
   e.stopPropagation();
 
-  if (!confirm('このセッションを削除しますか？')) return;
+  // 前の保留中の削除があれば即実行
+  if (_pendingDeleteId && _pendingDeleteId !== sessionId) {
+    await _commitDelete(_pendingDeleteId);
+  }
+
+  // セッションアイテムのDOM要素を記憶（取り消し用）
+  const item = document.querySelector(`.session-item[data-session-id="${sessionId}"]`);
+  if (!item) return;
+
+  _pendingDeleteId = sessionId;
+  _pendingDeleteItem = item;
+
+  // UIからは一時的に非表示（削除に見せる）
+  item.style.opacity = '0.4';
+  item.style.pointerEvents = 'none';
+
+  // 取り消しバーを表示
+  showUndoBar(sessionId);
+
+  // 5秒後に本当に削除
+  if (_pendingDeleteTimer) clearTimeout(_pendingDeleteTimer);
+  _pendingDeleteTimer = setTimeout(async () => {
+    await _commitDelete(sessionId);
+  }, 5000);
+}
+
+function showUndoBar(sessionId) {
+  let bar = document.getElementById('undoDeleteBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'undoDeleteBar';
+    bar.className = 'undo-delete-bar';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `
+    <span>🗑️ セッションを削除しました</span>
+    <button onclick="undoDeleteSession()">↩️ 取り消し</button>
+  `;
+  bar.classList.add('visible');
+  // 5秒後に自動非表示
+  setTimeout(() => { bar.classList.remove('visible'); }, 5500);
+}
+
+function hideUndoBar() {
+  const bar = document.getElementById('undoDeleteBar');
+  if (bar) bar.classList.remove('visible');
+}
+
+function undoDeleteSession() {
+  if (!_pendingDeleteId) return;
+  clearTimeout(_pendingDeleteTimer);
+  _pendingDeleteTimer = null;
+
+  // 見た目を元に戻す
+  if (_pendingDeleteItem) {
+    _pendingDeleteItem.style.opacity = '';
+    _pendingDeleteItem.style.pointerEvents = '';
+  }
+  _pendingDeleteId = null;
+  _pendingDeleteItem = null;
+  hideUndoBar();
+  showToast('削除を取り消しました', 'success');
+}
+
+async function _commitDelete(sessionId) {
+  if (_pendingDeleteTimer) { clearTimeout(_pendingDeleteTimer); _pendingDeleteTimer = null; }
+  _pendingDeleteId = null;
+  _pendingDeleteItem = null;
+  hideUndoBar();
 
   try {
     await apiRequest('DELETE', `/api/sessions/${sessionId}`);
     await loadSessions();
-    showToast('セッションを削除しました', 'success');
-  } catch (e) {
-    showToast(`削除エラー: ${e.message}`, 'error');
+  } catch (err) {
+    showToast(`削除エラー: ${err.message}`, 'error');
   }
 }
 
@@ -894,6 +1027,48 @@ function initFontSize() {
 // appendMessage に engine ラベルを追加（AI応答のみ）
 // → appendMessage の meta 引数を拡張して engineLabel を渡す
 
+// ===== Fix⑬: サイドバーに「記憶: N件」バッジを表示 =====
+async function updateGlobalMemoryBadge() {
+  try {
+    const data = await apiRequest('GET', '/api/global-memory');
+    const count = (data.items || []).length;
+    let badge = document.getElementById('globalMemoryBadge');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = `🧠 記憶: ${count}件`;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (e) {}
+}
+
+// ===== Fix⑭: 「最新メッセージへ」スクロールボタン =====
+function initScrollToBottomBtn() {
+  const chat = document.getElementById('chatMessages');
+  if (!chat) return;
+
+  let btn = document.getElementById('scrollToBottomBtn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'scrollToBottomBtn';
+    btn.className = 'scroll-to-bottom-btn';
+    btn.textContent = '↓';
+    btn.title = '最新メッセージへ';
+    btn.onclick = () => {
+      chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+    };
+    // chat の親要素に追加
+    const main = document.querySelector('.main');
+    if (main) main.appendChild(btn);
+  }
+
+  chat.addEventListener('scroll', () => {
+    const isNearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 120;
+    btn.classList.toggle('visible', !isNearBottom);
+  });
+}
+
 // ===== 初期化への統合 =====
 const _originalDOMReady = document.addEventListener.bind(document);
 // DOMContentLoaded に追加の初期化を注入
@@ -907,4 +1082,8 @@ window.addEventListener('DOMContentLoaded', () => {
     input.addEventListener('input', updateSendButtonState);
     updateSendButtonState();
   }
+  // Fix⑬: グローバルメモリバッジ初期化
+  updateGlobalMemoryBadge();
+  // Fix⑭: スクロールボタン初期化
+  initScrollToBottomBtn();
 });
