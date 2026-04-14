@@ -280,10 +280,8 @@ function setLang(lang) {
   if (!TRANSLATIONS[lang]) return;
   localStorage.setItem('memoria_lang', lang);
   applyTranslations();
-  // Persist to backend settings if available
-  if (typeof apiRequest === 'function') {
-    apiRequest('POST', '/api/settings/lang', { lang }).catch(() => {});
-  }
+  // 動的コンテンツの再描画（各ページで onLangChange を定義すれば呼ばれる）
+  if (typeof onLangChange === 'function') onLangChange();
 }
 
 function t(key) {

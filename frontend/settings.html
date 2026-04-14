@@ -58,16 +58,16 @@
   <!-- メインエリア -->
   <main class="main" style="overflow-y: auto;">
     <div class="settings-container">
-      <h2 style="font-size:22px; margin-bottom:24px; font-weight:600;">⚙️ 設定・コマンド管理</h2>
+      <h2 style="font-size:22px; margin-bottom:24px; font-weight:600;">⚙️ <span data-i18n="settings.title">設定・コマンド管理</span></h2>
 
       <!-- AIエンジン設定 -->
       <div class="settings-section">
-        <div class="settings-section-header">🤖 AIエンジン設定</div>
+        <div class="settings-section-header">🤖 <span data-i18n="settings.ai.section">AIエンジン設定</span></div>
 
         <div class="settings-row">
           <div>
-            <div class="settings-label">エンジン</div>
-            <div class="settings-sublabel">使用するAIを選択</div>
+            <div class="settings-label" data-i18n="settings.ai.engine.label">エンジン</div>
+            <div class="settings-sublabel" data-i18n="settings.ai.engine.sub">使用するAIを選択</div>
           </div>
           <select id="engineSelect" class="settings-input" onchange="onEngineChange()">
             <option value="ollama">Ollama（ローカル）</option>
@@ -170,13 +170,13 @@
         </div>
 
         <div class="settings-row" style="justify-content:flex-end;">
-          <button class="btn btn-primary" onclick="saveAISettings()">保存する</button>
+          <button class="btn btn-primary" onclick="saveAISettings()" data-i18n="settings.ai.save">保存する</button>
         </div>
       </div>
 
       <!-- グローバルメモリ管理 -->
       <div class="settings-section">
-        <div class="settings-section-header">🌐 グローバル記憶（セッションをまたいで保持）</div>
+        <div class="settings-section-header">🌐 <span data-i18n="settings.global.section">グローバル記憶（セッションをまたいで保持）</span></div>
         <div style="padding:4px 0 12px; font-size:13px; color:var(--text-secondary);">
           チャット中に <code style="background:#2a2a2a;padding:2px 6px;border-radius:4px;color:#10a37f;">/remember 覚えておいてほしい内容</code> と入力すると保存されます。新しいチャットでも自動的に参照されます。
         </div>
@@ -189,17 +189,17 @@
           </div>
           <div style="display:flex;gap:8px;">
             <input type="text" id="addMemoryInput" class="settings-input" style="width:240px;" placeholder="例: 私の名前はDaichi、エンジニアです">
-            <button class="btn btn-primary" onclick="addGlobalMemory()">追加</button>
+            <button class="btn btn-primary" onclick="addGlobalMemory()" data-i18n="settings.global.add.btn">追加</button>
           </div>
         </div>
         <div class="settings-row" style="justify-content:flex-end;">
-          <button class="btn btn-danger" onclick="clearAllGlobalMemory()">グローバル記憶をすべて削除</button>
+          <button class="btn btn-danger" onclick="clearAllGlobalMemory()" data-i18n="settings.global.clear.btn">グローバル記憶をすべて削除</button>
         </div>
       </div>
 
       <!-- 記憶設定 -->
       <div class="settings-section">
-        <div class="settings-section-header">💾 記憶設定</div>
+        <div class="settings-section-header">💾 <span data-i18n="settings.memory.section">記憶設定</span></div>
         <div class="settings-row">
           <div>
             <div class="settings-label">記憶圧縮タイミング</div>
@@ -215,13 +215,13 @@
             <div class="settings-label">セッション記憶をすべて削除</div>
             <div class="settings-sublabel">会話履歴とすべてのサマリーを削除します</div>
           </div>
-          <button class="btn btn-danger" onclick="clearAllMemory()">すべて削除</button>
+          <button class="btn btn-danger" onclick="clearAllMemory()" data-i18n="settings.memory.clear.btn">すべて削除</button>
         </div>
       </div>
 
       <!-- Ollamaモデル管理 -->
       <div class="settings-section" id="ollamaModelSection">
-        <div class="settings-section-header">📦 Ollamaモデル管理</div>
+        <div class="settings-section-header">📦 <span data-i18n="settings.model.section">Ollamaモデル管理</span></div>
         <div id="ollamaModelList" style="padding:8px;">
           <div style="padding:12px;color:var(--text-secondary);font-size:14px;">読み込み中...</div>
         </div>
@@ -232,14 +232,14 @@
           </div>
           <div style="display:flex;gap:8px;">
             <input type="text" id="addModelInput" class="settings-input" style="width:180px;" placeholder="gemma3:4b">
-            <button class="btn btn-primary" onclick="addModel()">追加</button>
+            <button class="btn btn-primary" onclick="addModel()" data-i18n="settings.model.add.btn">追加</button>
           </div>
         </div>
       </div>
 
       <!-- コマンド管理 -->
       <div class="settings-section">
-        <div class="settings-section-header">⚡ コマンド管理</div>
+        <div class="settings-section-header">⚡ <span data-i18n="settings.commands.section">コマンド管理</span></div>
 
         <!-- コマンドリスト -->
         <div id="commandList" class="command-list">
@@ -258,7 +258,7 @@
             <input type="text" id="newCmdDesc" class="form-input" placeholder="例: 入力した文章を3行で要約して">
           </div>
           <div style="text-align:right;">
-            <button class="btn btn-primary" onclick="addCommand()">追加する</button>
+            <button class="btn btn-primary" onclick="addCommand()" data-i18n="settings.commands.add.btn">追加する</button>
           </div>
         </div>
       </div>
@@ -564,26 +564,44 @@
       }
     }
 
+    // 最後に読み込んだコマンドを保持（言語切替時の再描画用）
+    let _lastCommands = [];
+
     function renderCommandList(commands) {
+      _lastCommands = commands;
       const list = document.getElementById('commandList');
       if (commands.length === 0) {
-        list.innerHTML = '<div style="padding:16px; color:var(--text-secondary); font-size:14px;">コマンドがありません</div>';
+        list.innerHTML = `<div style="padding:16px; color:var(--text-secondary); font-size:14px;">${typeof t === 'function' ? t('settings.commands.empty') || 'No commands' : 'No commands'}</div>`;
         return;
       }
+      const builtinLabel = typeof t === 'function' ? t('settings.commands.builtin') : '組み込み';
+      const customLabel  = typeof t === 'function' ? t('settings.commands.custom')  : 'カスタム';
       list.innerHTML = commands.map(cmd => `
         <div class="command-item">
           <div class="cmd-info">
             <div class="cmd-name">/${cmd.name}</div>
             <div class="cmd-desc">${cmd.description}</div>
           </div>
-          <span class="cmd-source">${cmd.source === 'builtin' ? '組み込み' : 'カスタム'}</span>
+          <span class="cmd-source">${cmd.source === 'builtin' ? builtinLabel : customLabel}</span>
           ${cmd.source === 'user' ? `
             <div class="cmd-actions">
-              <button class="cmd-action-btn delete" onclick="deleteCommand('${cmd.name}')" title="削除">🗑</button>
+              <button class="cmd-action-btn delete" onclick="deleteCommand('${cmd.name}')" title="${typeof t === 'function' ? t('action.delete') || '削除' : '削除'}">🗑</button>
             </div>
           ` : ''}
         </div>
       `).join('');
+    }
+
+    // 言語変更時に動的コンテンツを再描画するコールバック
+    function onLangChange() {
+      // 言語セレクトの値を更新
+      const langSel = document.getElementById('langSelect');
+      if (langSel) langSel.value = getCurrentLang();
+      // コマンドリストを再描画
+      if (_lastCommands.length > 0) renderCommandList(_lastCommands);
+      // 設定保存ボタンのテキストを更新
+      const saveBtn = document.querySelector('.btn.btn-primary[onclick="saveAISettings()"]');
+      if (saveBtn && typeof t === 'function') saveBtn.textContent = t('settings.ai.save');
     }
 
     async function addCommand() {

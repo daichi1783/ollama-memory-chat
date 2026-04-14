@@ -363,7 +363,7 @@ body {
 }
 
 .avatar.user { background: var(--accent); color: white; }
-.avatar.ai { background: #444; color: var(--text-primary); font-size: 18px; }
+.avatar.ai { background: transparent; padding: 0; overflow: hidden; }
 
 .message-content {
   flex: 1;

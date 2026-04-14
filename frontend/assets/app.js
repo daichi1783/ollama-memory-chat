@@ -1,6 +1,25 @@
 // frontend/assets/app.js
 const API_BASE = 'http://127.0.0.1:8765';
 
+// ===== Orbital ロゴ SVG (AIアバター用) =====
+const ORBITAL_AVATAR_SVG = `<svg width="32" height="32" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+  <defs>
+    <linearGradient id="avGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#89b4fa"/>
+      <stop offset="50%" stop-color="#cba6f7"/>
+      <stop offset="100%" stop-color="#f5c2e7"/>
+    </linearGradient>
+  </defs>
+  <circle cx="40" cy="40" r="38" fill="url(#avGrad)"/>
+  <circle cx="40" cy="40" r="21" fill="white" opacity="0.15"/>
+  <circle cx="40" cy="40" r="11" fill="white" opacity="0.2"/>
+  <circle cx="40" cy="40" r="4.5" fill="white" opacity="0.9"/>
+  <circle cx="40" cy="17" r="4" fill="white" opacity="0.8"/>
+  <circle cx="63" cy="40" r="4" fill="white" opacity="0.8"/>
+  <circle cx="40" cy="63" r="4" fill="white" opacity="0.8"/>
+  <circle cx="17" cy="40" r="4" fill="white" opacity="0.8"/>
+</svg>`;
+
 // ===== 状態管理 =====
 let commandNames = [];
 let isLoading = false;
@@ -61,19 +80,20 @@ function updateStatusIndicator(ollamaRunning, engine) {
   const dot = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
   if (!dot || !text) return;
+  const tFn = typeof t === 'function' ? t : k => k;
 
   if (engine === 'ollama') {
     dot.className = ollamaRunning ? 'status-dot online' : 'status-dot';
-    text.textContent = ollamaRunning ? 'Ollama: 接続中' : 'Ollama: 未起動';
+    text.textContent = ollamaRunning ? tFn('status.ollama.online') : tFn('status.ollama.offline');
   } else if (engine === 'claude') {
     dot.className = 'status-dot online';
-    text.textContent = 'Claude: 設定済み';
+    text.textContent = tFn('status.claude.ready');
   } else if (engine === 'gemini') {
     dot.className = 'status-dot online';
-    text.textContent = 'Gemini: 設定済み';
+    text.textContent = tFn('status.gemini.ready');
   } else {
     dot.className = 'status-dot online';
-    text.textContent = 'クラウドAI: 設定済み';
+    text.textContent = tFn('status.cloud.ready');
   }
 }
 
@@ -141,11 +161,11 @@ async function loadCommandNames() {
 function showWelcome() {
   const chat = document.getElementById('chatMessages');
   if (!chat || chat.children.length > 0) return;
-
+  const tFn = typeof t === 'function' ? t : k => k;
   chat.innerHTML = `
     <div class="welcome">
       <h2>Memoria</h2>
-      <p>会話を記憶するローカルAIチャットです。<br>あなたのデータは、あなたのMacの中だけに保存されます。</p>
+      <p>${tFn('app.tagline')}<br><span style="font-size:13px;opacity:0.7;">${tFn('app.tagline.sub')}</span></p>
       <div class="command-chips">
         ${commandNames.map(name => `
           <div class="command-chip" onclick="insertCommand('/${name}')">/${name}</div>
@@ -215,7 +235,7 @@ function appendMessage(role, content, meta = {}) {
   const div = document.createElement('div');
   div.className = `message ${role}`;
 
-  const avatarContent = role === 'user' ? 'D' : '🤖';
+  const avatarContent = role === 'user' ? 'D' : ORBITAL_AVATAR_SVG;
   const avatarClass = role === 'user' ? 'user' : 'ai';
 
   // マークダウン風の簡易レンダリング
@@ -274,7 +294,7 @@ function appendLoading() {
   div.id = id;
   div.className = 'message ai';
   div.innerHTML = `
-    <div class="avatar ai">🤖</div>
+    <div class="avatar ai">${ORBITAL_AVATAR_SVG}</div>
     <div class="message-content">
       <div class="typing-indicator">
         <div class="typing-dot"></div>
