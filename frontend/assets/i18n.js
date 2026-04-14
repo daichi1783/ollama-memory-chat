@@ -95,6 +95,29 @@ const TRANSLATIONS = {
     'toast.command.added': '✅ コマンドを追加しました',
     'toast.command.deleted': '✅ コマンドを削除しました',
     'toast.model.updated': '✅ モデルを最新版に更新しました',
+    'engine.ollama.opt': 'Ollama（ローカル）',
+    'engine.openai.opt': 'OpenAI互換API（クラウド）',
+    'settings.ollama.endpoint.label': 'OllamaエンドポイントURL',
+    'settings.ollama.endpoint.sub': '通常は変更不要',
+    'settings.ollama.model.label': '使用モデル',
+    'settings.ollama.model.sub': 'インストール済みのモデルから選択',
+    'settings.ollama.model.refresh': '一覧を更新',
+    'settings.openai.endpoint.label': 'APIエンドポイントURL',
+    'settings.openai.endpoint.sub': '例: https://api.openai.com/v1',
+    'settings.openai.model.label': 'モデル名',
+    'settings.openai.model.sub': '例: gpt-4o, gpt-4-turbo',
+    'settings.apikey.label': 'APIキー',
+    'settings.apikey.sub': 'ローカルに保存・外部送信なし',
+    'settings.model.label': 'モデル',
+    'settings.claude.model.sub': '使用するClaudeモデルを選択',
+    'settings.claude.sonnet': 'claude-sonnet-4-6（バランス型・推奨）',
+    'settings.claude.apikey.label': 'Anthropic APIキー',
+    'settings.claude.apikey.sub': 'console.anthropic.comで取得 · ローカルに保存',
+    'settings.gemini.model.sub': '使用するGeminiモデルを選択',
+    'settings.gemini.apikey.label': 'Google APIキー',
+    'settings.gemini.apikey.sub': 'aistudio.google.comで取得 · ローカルに保存',
+    'settings.commands.name.label': 'コマンド名',
+    'settings.commands.desc.label': '説明',
     'voice.btn.title': '音声入力（クリックで開始/停止）',
     'voice.listening': '🎤 聞いています...',
     'voice.error.no_speech': '音声が検出されませんでした',
@@ -186,6 +209,29 @@ const TRANSLATIONS = {
     'toast.command.added': '✅ Command added',
     'toast.command.deleted': '✅ Command deleted',
     'toast.model.updated': '✅ Model updated to latest',
+    'engine.ollama.opt': 'Ollama (Local)',
+    'engine.openai.opt': 'OpenAI-compatible API (Cloud)',
+    'settings.ollama.endpoint.label': 'Ollama Endpoint URL',
+    'settings.ollama.endpoint.sub': 'Usually no change needed',
+    'settings.ollama.model.label': 'Model',
+    'settings.ollama.model.sub': 'Select from installed models',
+    'settings.ollama.model.refresh': 'Refresh list',
+    'settings.openai.endpoint.label': 'API Endpoint URL',
+    'settings.openai.endpoint.sub': 'e.g. https://api.openai.com/v1',
+    'settings.openai.model.label': 'Model name',
+    'settings.openai.model.sub': 'e.g. gpt-4o, gpt-4-turbo',
+    'settings.apikey.label': 'API Key',
+    'settings.apikey.sub': 'Stored locally · Never sent externally',
+    'settings.model.label': 'Model',
+    'settings.claude.model.sub': 'Select Claude model',
+    'settings.claude.sonnet': 'claude-sonnet-4-6 (Balanced · Recommended)',
+    'settings.claude.apikey.label': 'Anthropic API Key',
+    'settings.claude.apikey.sub': 'Get from console.anthropic.com · Stored locally',
+    'settings.gemini.model.sub': 'Select Gemini model',
+    'settings.gemini.apikey.label': 'Google API Key',
+    'settings.gemini.apikey.sub': 'Get from aistudio.google.com · Stored locally',
+    'settings.commands.name.label': 'Command name',
+    'settings.commands.desc.label': 'Description',
     'voice.btn.title': 'Voice input (click to start/stop)',
     'voice.listening': '🎤 Listening...',
     'voice.error.no_speech': 'No speech detected',
@@ -277,6 +323,29 @@ const TRANSLATIONS = {
     'toast.command.added': '✅ Comando añadido',
     'toast.command.deleted': '✅ Comando eliminado',
     'toast.model.updated': '✅ Modelo actualizado',
+    'engine.ollama.opt': 'Ollama (Local)',
+    'engine.openai.opt': 'API compatible con OpenAI (Nube)',
+    'settings.ollama.endpoint.label': 'URL del Endpoint de Ollama',
+    'settings.ollama.endpoint.sub': 'Generalmente no necesita cambio',
+    'settings.ollama.model.label': 'Modelo',
+    'settings.ollama.model.sub': 'Selecciona de los modelos instalados',
+    'settings.ollama.model.refresh': 'Actualizar lista',
+    'settings.openai.endpoint.label': 'URL del Endpoint de API',
+    'settings.openai.endpoint.sub': 'Ej: https://api.openai.com/v1',
+    'settings.openai.model.label': 'Nombre del modelo',
+    'settings.openai.model.sub': 'Ej: gpt-4o, gpt-4-turbo',
+    'settings.apikey.label': 'Clave de API',
+    'settings.apikey.sub': 'Guardado localmente · Nunca enviado externamente',
+    'settings.model.label': 'Modelo',
+    'settings.claude.model.sub': 'Selecciona el modelo Claude',
+    'settings.claude.sonnet': 'claude-sonnet-4-6 (Equilibrado · Recomendado)',
+    'settings.claude.apikey.label': 'Clave de API de Anthropic',
+    'settings.claude.apikey.sub': 'Obtener en console.anthropic.com · Guardado localmente',
+    'settings.gemini.model.sub': 'Selecciona el modelo Gemini',
+    'settings.gemini.apikey.label': 'Clave de API de Google',
+    'settings.gemini.apikey.sub': 'Obtener en aistudio.google.com · Guardado localmente',
+    'settings.commands.name.label': 'Nombre del comando',
+    'settings.commands.desc.label': 'Descripción',
     'voice.btn.title': 'Entrada de voz (clic para iniciar/detener)',
     'voice.listening': '🎤 Escuchando...',
     'voice.error.no_speech': 'No se detectó voz',
@@ -305,9 +374,10 @@ function t(key) {
 }
 
 function applyTranslations() {
-  // data-i18n: textContent
+  // data-i18n: textContent（innerHTMLを含む要素はスキップしてtextContentのみ）
   document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.dataset.i18n);
+    const val = t(el.dataset.i18n);
+    if (val !== el.dataset.i18n) el.textContent = val;
   });
   // data-i18n-placeholder: placeholder attribute
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
@@ -316,6 +386,11 @@ function applyTranslations() {
   // data-i18n-title: title attribute
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     el.title = t(el.dataset.i18nTitle);
+  });
+  // data-i18n on <option>: translate option text
+  document.querySelectorAll('option[data-i18n]').forEach(el => {
+    const val = t(el.dataset.i18n);
+    if (val !== el.dataset.i18n) el.textContent = val;
   });
   // Update html lang attribute
   const langMap = { ja: 'ja', en: 'en', es: 'es' };

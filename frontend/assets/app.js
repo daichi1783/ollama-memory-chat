@@ -709,12 +709,27 @@ function toggleVoiceInput() {
   }
 }
 
-function _startRecording() {
+async function _startRecording() {
+  const tFn = typeof t === 'function' ? t : k => k;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    const tFn2 = typeof t === 'function' ? t : k => k;
-    showToast(tFn2('voice.error.no_support'), 'error');
+    showToast(tFn('voice.error.no_support'), 'error');
     return;
+  }
+
+  // ── マイク権限を先に取得 ──────────────────────────────────────────
+  // getUserMedia() を先に呼ぶことで macOS のシステム許可ダイアログが表示される
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // 許可確認のみ・即解放
+    } catch (err) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showToast(tFn('voice.error.not_allowed'), 'error');
+        return;
+      }
+      // その他のエラーは無視して SpeechRecognition に任せる
+    }
   }
 
   _recognition = new SR();

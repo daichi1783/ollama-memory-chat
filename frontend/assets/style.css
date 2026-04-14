@@ -903,3 +903,13 @@ body {
   60%  { box-shadow: 0 0 0 8px rgba(243, 139, 168, 0); }
   100% { box-shadow: 0 0 0 0 rgba(243, 139, 168, 0); }
 }
+
+/* ===== グローバルメモリ・ヒントテキスト ===== */
+.remember-code {
+  background: var(--bg-primary);
+  padding: 2px 7px;
+  border-radius: 5px;
+  color: var(--accent);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+}

@@ -70,8 +70,8 @@
             <div class="settings-sublabel" data-i18n="settings.ai.engine.sub">使用するAIを選択</div>
           </div>
           <select id="engineSelect" class="settings-input" onchange="onEngineChange()">
-            <option value="ollama">Ollama（ローカル）</option>
-            <option value="openai_compatible">OpenAI互換API（クラウド）</option>
+            <option value="ollama" data-i18n="engine.ollama.opt">Ollama（ローカル）</option>
+            <option value="openai_compatible" data-i18n="engine.openai.opt">OpenAI互換API（クラウド）</option>
             <option value="claude">Claude (Anthropic)</option>
             <option value="gemini">Gemini (Google)</option>
           </select>
@@ -81,21 +81,21 @@
         <div id="ollamaSettings">
           <div class="settings-row">
             <div>
-              <div class="settings-label">OllamaエンドポイントURL</div>
-              <div class="settings-sublabel">通常は変更不要</div>
+              <div class="settings-label" data-i18n="settings.ollama.endpoint.label">OllamaエンドポイントURL</div>
+              <div class="settings-sublabel" data-i18n="settings.ollama.endpoint.sub">通常は変更不要</div>
             </div>
             <input type="text" id="ollamaEndpoint" class="settings-input" placeholder="http://localhost:11434">
           </div>
           <div class="settings-row">
             <div>
-              <div class="settings-label">使用モデル</div>
-              <div class="settings-sublabel">インストール済みのモデルから選択</div>
+              <div class="settings-label" data-i18n="settings.ollama.model.label">使用モデル</div>
+              <div class="settings-sublabel" data-i18n="settings.ollama.model.sub">インストール済みのモデルから選択</div>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
               <select id="ollamaModel" class="settings-input" style="min-width:180px;">
                 <option value="">読み込み中...</option>
               </select>
-              <button class="btn btn-secondary" onclick="refreshModelDropdown()" title="一覧を更新" style="padding:8px 12px;">🔄</button>
+              <button class="btn btn-secondary" onclick="refreshModelDropdown()" data-i18n-title="settings.ollama.model.refresh" title="一覧を更新" style="padding:8px 12px;">🔄</button>
             </div>
           </div>
         </div>
@@ -104,22 +104,22 @@
         <div id="openaiSettings" style="display:none;">
           <div class="settings-row">
             <div>
-              <div class="settings-label">API エンドポイントURL</div>
-              <div class="settings-sublabel">例: https://api.openai.com/v1</div>
+              <div class="settings-label" data-i18n="settings.openai.endpoint.label">API エンドポイントURL</div>
+              <div class="settings-sublabel" data-i18n="settings.openai.endpoint.sub">例: https://api.openai.com/v1</div>
             </div>
             <input type="text" id="openaiEndpoint" class="settings-input" placeholder="https://api.openai.com/v1">
           </div>
           <div class="settings-row">
             <div>
-              <div class="settings-label">モデル名</div>
-              <div class="settings-sublabel">例: gpt-4o, gpt-4-turbo</div>
+              <div class="settings-label" data-i18n="settings.openai.model.label">モデル名</div>
+              <div class="settings-sublabel" data-i18n="settings.openai.model.sub">例: gpt-4o, gpt-4-turbo</div>
             </div>
             <input type="text" id="openaiModel" class="settings-input" placeholder="gpt-4o">
           </div>
           <div class="settings-row">
             <div>
-              <div class="settings-label">APIキー</div>
-              <div class="settings-sublabel">ローカルに保存・外部送信なし</div>
+              <div class="settings-label" data-i18n="settings.apikey.label">APIキー</div>
+              <div class="settings-sublabel" data-i18n="settings.apikey.sub">ローカルに保存・外部送信なし</div>
             </div>
             <input type="password" id="openaiApiKey" class="settings-input" placeholder="sk-...">
           </div>
@@ -129,19 +129,19 @@
         <div id="claudeSettings" style="display:none;">
           <div class="settings-row">
             <div>
-              <div class="settings-label">モデル</div>
-              <div class="settings-sublabel">使用するClaudeモデルを選択</div>
+              <div class="settings-label" data-i18n="settings.model.label">モデル</div>
+              <div class="settings-sublabel" data-i18n="settings.claude.model.sub">使用するClaudeモデルを選択</div>
             </div>
             <select id="claudeModel" class="settings-input">
-              <option value="claude-sonnet-4-6">claude-sonnet-4-6（バランス型・推奨）</option>
+              <option value="claude-sonnet-4-6" data-i18n="settings.claude.sonnet">claude-sonnet-4-6（バランス型・推奨）</option>
               <option value="claude-opus-4-6">claude-opus-4-6（最高性能）</option>
               <option value="claude-haiku-4-5-20251001">claude-haiku-4-5（高速・軽量）</option>
             </select>
           </div>
           <div class="settings-row">
             <div>
-              <div class="settings-label">Anthropic APIキー</div>
-              <div class="settings-sublabel">console.anthropic.comで取得 · ローカルに保存</div>
+              <div class="settings-label" data-i18n="settings.claude.apikey.label">Anthropic APIキー</div>
+              <div class="settings-sublabel" data-i18n="settings.claude.apikey.sub">console.anthropic.comで取得 · ローカルに保存</div>
             </div>
             <input type="password" id="claudeApiKey" class="settings-input" placeholder="sk-ant-...">
           </div>
@@ -151,8 +151,8 @@
         <div id="geminiSettings" style="display:none;">
           <div class="settings-row">
             <div>
-              <div class="settings-label">モデル</div>
-              <div class="settings-sublabel">使用するGeminiモデルを選択</div>
+              <div class="settings-label" data-i18n="settings.model.label">モデル</div>
+              <div class="settings-sublabel" data-i18n="settings.gemini.model.sub">使用するGeminiモデルを選択</div>
             </div>
             <select id="geminiModel" class="settings-input">
               <option value="gemini-2.0-flash">gemini-2.0-flash（高速・推奨）</option>
@@ -162,8 +162,8 @@
           </div>
           <div class="settings-row">
             <div>
-              <div class="settings-label">Google API キー</div>
-              <div class="settings-sublabel">aistudio.google.comで取得 · ローカルに保存</div>
+              <div class="settings-label" data-i18n="settings.gemini.apikey.label">Google API キー</div>
+              <div class="settings-sublabel" data-i18n="settings.gemini.apikey.sub">aistudio.google.comで取得 · ローカルに保存</div>
             </div>
             <input type="password" id="geminiApiKey" class="settings-input" placeholder="AIza...">
           </div>
@@ -177,18 +177,18 @@
       <!-- グローバルメモリ管理 -->
       <div class="settings-section">
         <div class="settings-section-header">🌐 <span data-i18n="settings.global.section">グローバル記憶（セッションをまたいで保持）</span></div>
-        <div style="padding:4px 0 12px; font-size:13px; color:var(--text-secondary);">
-          チャット中に <code style="background:#2a2a2a;padding:2px 6px;border-radius:4px;color:#10a37f;">/remember 覚えておいてほしい内容</code> と入力すると保存されます。新しいチャットでも自動的に参照されます。
+        <div class="settings-row" style="margin-bottom:4px;">
+          <div class="settings-sublabel" data-i18n="settings.global.hint" style="padding:0;">チャット中に <code class="remember-code">/remember 覚えておいてほしい内容</code> と入力すると保存されます。新しいチャットでも自動的に参照されます。</div>
         </div>
         <div id="globalMemoryList" style="padding:4px 0;">
           <div style="padding:12px;color:var(--text-secondary);font-size:13px;">読み込み中...</div>
         </div>
         <div class="settings-row" style="justify-content:space-between; margin-top:8px;">
           <div>
-            <div class="settings-label">手動で追加</div>
+            <div class="settings-label" data-i18n="settings.global.add.label">手動で追加</div>
           </div>
           <div style="display:flex;gap:8px;">
-            <input type="text" id="addMemoryInput" class="settings-input" style="width:240px;" placeholder="例: 私の名前はDaichi、エンジニアです">
+            <input type="text" id="addMemoryInput" class="settings-input" style="width:240px;" data-i18n-placeholder="settings.global.add.placeholder" placeholder="例: 私の名前はDaichi、エンジニアです">
             <button class="btn btn-primary" onclick="addGlobalMemory()" data-i18n="settings.global.add.btn">追加</button>
           </div>
         </div>
@@ -202,18 +202,18 @@
         <div class="settings-section-header">💾 <span data-i18n="settings.memory.section">記憶設定</span></div>
         <div class="settings-row">
           <div>
-            <div class="settings-label">記憶圧縮タイミング</div>
-            <div class="settings-sublabel">何往復ごとに会話を要約・圧縮するか</div>
+            <div class="settings-label" data-i18n="settings.memory.threshold.label">記憶圧縮タイミング</div>
+            <div class="settings-sublabel" data-i18n="settings.memory.threshold.sub">何往復ごとに会話を要約・圧縮するか</div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <input type="number" id="compressionThreshold" class="settings-input" style="width:80px;" min="5" max="50" value="10">
-            <span style="color:var(--text-secondary); font-size:14px;">往復</span>
+            <span style="color:var(--text-secondary); font-size:14px;" data-i18n="settings.memory.threshold.unit">往復</span>
           </div>
         </div>
         <div class="settings-row">
           <div>
-            <div class="settings-label">セッション記憶をすべて削除</div>
-            <div class="settings-sublabel">会話履歴とすべてのサマリーを削除します</div>
+            <div class="settings-label" data-i18n="settings.memory.clear.label">セッション記憶をすべて削除</div>
+            <div class="settings-sublabel" data-i18n="settings.memory.clear.sub">会話履歴とすべてのサマリーを削除します</div>
           </div>
           <button class="btn btn-danger" onclick="clearAllMemory()" data-i18n="settings.memory.clear.btn">すべて削除</button>
         </div>
@@ -227,8 +227,8 @@
         </div>
         <div class="settings-row" style="justify-content:space-between;">
           <div>
-            <div class="settings-label">モデルを追加</div>
-            <div class="settings-sublabel">モデル名を入力（例: llama3.2:3b）</div>
+            <div class="settings-label" data-i18n="settings.model.add.label">モデルを追加</div>
+            <div class="settings-sublabel" data-i18n="settings.model.add.sub">モデル名を入力（例: llama3.2:3b）</div>
           </div>
           <div style="display:flex;gap:8px;">
             <input type="text" id="addModelInput" class="settings-input" style="width:180px;" placeholder="gemma3:4b">
@@ -248,13 +248,13 @@
 
         <!-- コマンド追加フォーム -->
         <div class="add-command-form">
-          <div style="font-size:14px; font-weight:600; margin-bottom:12px; color:var(--text-primary);">＋ 新しいコマンドを追加</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:12px; color:var(--text-primary);" data-i18n="settings.commands.add.title">＋ 新しいコマンドを追加</div>
           <div class="form-row">
-            <label>コマンド名</label>
+            <label data-i18n="settings.commands.name.label">コマンド名</label>
             <input type="text" id="newCmdName" class="form-input" placeholder="例: summarize（/は不要）">
           </div>
           <div class="form-row">
-            <label>説明</label>
+            <label data-i18n="settings.commands.desc.label">説明</label>
             <input type="text" id="newCmdDesc" class="form-input" placeholder="例: 入力した文章を3行で要約して">
           </div>
           <div style="text-align:right;">

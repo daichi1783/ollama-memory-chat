@@ -145,5 +145,6 @@ app = BUNDLE(
         'LSMinimumSystemVersion': '12.0',
         # プライバシー説明（App Store非対象でも明示しておく）
         'NSLocalNetworkUsageDescription': 'Memoriaはローカルのオープンソースサービスと通信します。',
+        'NSMicrophoneUsageDescription': 'Memoriaは音声入力のためにマイクを使用します。マイクへのアクセスを許可してください。',
     },
 )
