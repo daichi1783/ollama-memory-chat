@@ -65,8 +65,20 @@ $PIP install \
   pyinstaller \
   -q
 
-echo "  ✅ パッケージ準備完了"
-$PIP install pillow numpy -q
+echo "  ✅ 基本パッケージ準備完了"
+
+# 音声入力ライブラリ（sounddevice + faster-whisper）
+# PortAudio が Homebrew でインストール済みであることが前提
+echo "  音声入力ライブラリをインストール中..."
+$PIP install \
+  sounddevice \
+  faster-whisper \
+  scipy \
+  numpy \
+  -q && echo "  ✅ 音声入力ライブラリ準備完了" \
+     || echo "  ⚠️  音声入力ライブラリのインストールに失敗しました（アプリ自体は起動します）"
+
+$PIP install pillow -q
 
 echo ""
 echo "【2.5/5】アプリアイコンを生成中..."

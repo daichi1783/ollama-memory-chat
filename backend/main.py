@@ -599,12 +599,23 @@ async def serve_setup():
     raise HTTPException(status_code=404, detail="setup.html not found")
 
 # ===== 音声入力 API (オフライン: sounddevice + faster-whisper) =====
+# voice_manager の import は遅延実行:
+# sounddevice / faster-whisper が未インストールの環境でもアプリが起動できる。
 
-import voice_manager as vm
+def _get_voice_manager():
+    """voice_manager をその場でインポートして返す。依存ライブラリがなければ None。"""
+    try:
+        import voice_manager as _vm
+        return _vm
+    except ImportError as e:
+        return None
 
 @app.post("/api/voice/start")
 async def voice_start():
     """マイク録音を開始する"""
+    vm = _get_voice_manager()
+    if vm is None:
+        return {"success": False, "message": "音声入力ライブラリが利用できません（sounddevice / faster-whisper）"}
     return vm.start_recording()
 
 class VoiceStopRequest(BaseModel):
@@ -613,16 +624,25 @@ class VoiceStopRequest(BaseModel):
 @app.post("/api/voice/stop")
 async def voice_stop(req: VoiceStopRequest = VoiceStopRequest()):
     """録音を停止してWhisperで文字起こしする"""
+    vm = _get_voice_manager()
+    if vm is None:
+        return {"success": False, "message": "音声入力ライブラリが利用できません"}
     return vm.stop_and_transcribe(language=req.language)
 
 @app.get("/api/voice/status")
 async def voice_status():
     """録音中かどうかを返す"""
-    return {"recording": vm.is_recording()}
+    vm = _get_voice_manager()
+    if vm is None:
+        return {"recording": False, "available": False}
+    return {"recording": vm.is_recording(), "available": True}
 
 @app.get("/api/voice/model-status")
 async def voice_model_status():
     """Whisperモデルの利用可否を返す"""
+    vm = _get_voice_manager()
+    if vm is None:
+        return {"available": False, "message": "音声入力ライブラリが未インストールです"}
     return vm.get_model_status()
 
 # ===== フロントエンド配信 =====

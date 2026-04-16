@@ -14,6 +14,27 @@ fastapi_hidden   = collect_submodules('fastapi')
 uvicorn_hidden   = collect_submodules('uvicorn')
 anyio_hidden     = collect_submodules('anyio')
 
+# ===== 音声入力: sounddevice + faster-whisper (optional) =====
+try:
+    sd_datas, sd_binaries, sd_hidden = collect_all('sounddevice')
+except Exception:
+    sd_datas, sd_binaries, sd_hidden = [], [], []
+
+try:
+    fw_datas, fw_binaries, fw_hidden = collect_all('faster_whisper')
+except Exception:
+    fw_datas, fw_binaries, fw_hidden = [], [], []
+
+try:
+    ct_datas, ct_binaries, ct_hidden = collect_all('ctranslate2')
+except Exception:
+    ct_datas, ct_binaries, ct_hidden = [], [], []
+
+try:
+    tok_datas, tok_binaries, tok_hidden = collect_all('tokenizers')
+except Exception:
+    tok_datas, tok_binaries, tok_hidden = [], [], []
+
 # ===== pyobjc (macOS WebView が依存する Obj-C バインディング) =====
 pyobjc_modules = [
     'objc',
@@ -25,7 +46,7 @@ pyobjc_modules = [
 a = Analysis(
     ['desktop_app.py'],
     pathex=['.'],
-    binaries=webview_binaries,
+    binaries=[*webview_binaries, *sd_binaries, *fw_binaries, *ct_binaries, *tok_binaries],
     datas=[
         ('frontend',    'frontend'),     # HTML/JS/CSS
         ('config.yaml', '.'),            # デフォルト設定
@@ -34,6 +55,10 @@ a = Analysis(
         *collect_data_files('starlette'),
         *collect_data_files('fastapi'),
         *collect_data_files('ollama'),
+        *sd_datas,
+        *fw_datas,
+        *ct_datas,
+        *tok_datas,
     ],
     hiddenimports=[
         # === pywebview ===
@@ -90,6 +115,24 @@ a = Analysis(
         'email.mime.text',
         'email.mime.multipart',
         'importlib.metadata',
+        # === 音声入力 (optional) ===
+        *sd_hidden,
+        *fw_hidden,
+        *ct_hidden,
+        *tok_hidden,
+        'sounddevice',
+        'soundfile',
+        'faster_whisper',
+        'faster_whisper.transcribe',
+        'faster_whisper.audio',
+        'faster_whisper.tokenizer',
+        'ctranslate2',
+        'tokenizers',
+        'scipy',
+        'scipy.io',
+        'scipy.io.wavfile',
+        'numpy',
+        'numpy.core',
     ],
     hookspath=[],
     hooksconfig={},
