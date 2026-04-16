@@ -829,17 +829,18 @@ function showToast(message, type = 'success') {
   setTimeout(() => { toast.classList.remove('show'); }, 3000);
 }
 
-// ===== 音声入力 (Web Speech API) =====
-let _recognition = null;
+// ===== 音声入力 (オフライン: Python側 sounddevice + faster-whisper) =====
+// Web Speech API / getUserMedia は使用しない。
+// 録音・文字起こしはすべて Python バックエンドで行い、REST API 経由で制御する。
+
 let _isRecording = false;
-let _interimText = '';   // 認識中（暫定）のテキスト
 
-// 言語コードマッピング: i18n lang → BCP-47
-const SPEECH_LANG_MAP = { ja: 'ja-JP', en: 'en-US', es: 'es-ES' };
+// i18n lang → Whisper language code
+const WHISPER_LANG_MAP = { ja: 'ja', en: 'en', es: 'es' };
 
-function _getSpeechLang() {
+function _getWhisperLang() {
   const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'ja';
-  return SPEECH_LANG_MAP[lang] || 'ja-JP';
+  return WHISPER_LANG_MAP[lang] || null;   // null = 自動検出
 }
 
 function toggleVoiceInput() {
@@ -851,98 +852,59 @@ function toggleVoiceInput() {
 }
 
 async function _startRecording() {
-  const tFn = typeof t === 'function' ? t : k => k;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    showToast(tFn('voice.error.no_support'), 'error');
-    return;
-  }
-
-  // ── マイク権限を先に取得 ──────────────────────────────────────────
-  // getUserMedia() を先に呼ぶことで macOS のシステム許可ダイアログが表示される
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // 許可確認のみ・即解放
-    } catch (err) {
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        showToast(tFn('voice.error.not_allowed'), 'error');
-        return;
-      }
-      // その他のエラーは無視して SpeechRecognition に任せる
-    }
-  }
-
-  _recognition = new SR();
-  _recognition.lang = _getSpeechLang();
-  _recognition.continuous = false;       // 一文ごとに停止
-  _recognition.interimResults = true;    // 暫定テキストも表示
-
-  const input = document.getElementById('messageInput');
+  if (_isRecording) return;
   const micBtn = document.getElementById('micBtn');
-  const baseText = input.value;          // 録音前のテキストを保持
-
-  _recognition.onstart = () => {
+  try {
+    const res = await fetch('/api/voice/start', { method: 'POST' });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(data.message || '録音を開始できませんでした', 'error');
+      return;
+    }
     _isRecording = true;
-    _interimText = '';
     micBtn?.classList.add('recording');
-    const tFn3 = typeof t === 'function' ? t : k => k;
-    showToast(tFn3('voice.listening'), 'success');
-  };
-
-  _recognition.onresult = (event) => {
-    let interim = '';
-    let final   = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const text = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        final += text;
-      } else {
-        interim += text;
-      }
-    }
-    // 確定テキストは入力欄に追記、暫定テキストはプレビュー表示
-    if (final) {
-      const sep = baseText && !baseText.endsWith(' ') ? ' ' : '';
-      input.value = baseText + sep + final.trim();
-      input.dispatchEvent(new Event('input'));   // 高さ自動調整
-    }
-    _interimText = interim;
-    if (interim) {
-      // placeholderを暫定テキストで上書き（視覚的フィードバック）
-      input.placeholder = '🎤 ' + interim;
-    }
-  };
-
-  _recognition.onerror = (event) => {
-    _stopRecording();
-    const msg = {
-      'no-speech':       '音声が検出されませんでした',
-      'not-allowed':     'マイクの使用が拒否されています。システム設定でMemoriaのマイクアクセスを許可してください。',
-      'network':         'ネットワークエラーが発生しました',
-      'audio-capture':   'マイクが見つかりません',
-    }[event.error] || `エラー: ${event.error}`;
-    showToast(msg, 'error');
-  };
-
-  _recognition.onend = () => {
-    _stopRecording();
-    // placeholder を元に戻す
-    const tFn = typeof t === 'function' ? t : () => '';
-    const ph = tFn('chat.placeholder') || 'メッセージを入力...';
-    const input = document.getElementById('messageInput');
-    if (input) input.placeholder = ph;
-  };
-
-  _recognition.start();
+    showToast('🎤 録音中... もう一度押すと送信', 'success');
+  } catch (e) {
+    showToast('録音の開始に失敗しました: ' + e.message, 'error');
+  }
 }
 
-function _stopRecording() {
-  _isRecording = false;
+async function _stopRecording() {
+  if (!_isRecording) return;
   const micBtn = document.getElementById('micBtn');
+  const input = document.getElementById('messageInput');
+  _isRecording = false;
   micBtn?.classList.remove('recording');
-  _recognition?.stop();
-  _recognition = null;
+  showToast('⏳ 音声を認識中...', 'success');
+
+  // placeholder を一時的に変更してフィードバック
+  const origPlaceholder = input ? input.placeholder : '';
+  if (input) input.placeholder = '🔄 文字起こし中...';
+
+  try {
+    const lang = _getWhisperLang();
+    const res = await fetch('/api/voice/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language: lang }),
+    });
+    const data = await res.json();
+    if (data.success && data.text) {
+      if (input) {
+        const sep = input.value && !input.value.endsWith(' ') ? ' ' : '';
+        input.value = input.value + sep + data.text;
+        input.dispatchEvent(new Event('input'));  // 高さ自動調整
+        updateSendButtonState();
+      }
+      showToast('✅ 認識完了', 'success');
+    } else {
+      showToast(data.message || '音声が認識できませんでした', 'error');
+    }
+  } catch (e) {
+    showToast('認識エラー: ' + e.message, 'error');
+  } finally {
+    if (input) input.placeholder = origPlaceholder;
+  }
 }
 
 // ===== UX Fix 1: オンボーディング =====

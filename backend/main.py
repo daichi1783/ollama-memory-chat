@@ -598,6 +598,33 @@ async def serve_setup():
         return FileResponse(str(setup_path))
     raise HTTPException(status_code=404, detail="setup.html not found")
 
+# ===== 音声入力 API (オフライン: sounddevice + faster-whisper) =====
+
+import voice_manager as vm
+
+@app.post("/api/voice/start")
+async def voice_start():
+    """マイク録音を開始する"""
+    return vm.start_recording()
+
+class VoiceStopRequest(BaseModel):
+    language: Optional[str] = None   # "ja" / "en" / "es" / None（自動検出）
+
+@app.post("/api/voice/stop")
+async def voice_stop(req: VoiceStopRequest = VoiceStopRequest()):
+    """録音を停止してWhisperで文字起こしする"""
+    return vm.stop_and_transcribe(language=req.language)
+
+@app.get("/api/voice/status")
+async def voice_status():
+    """録音中かどうかを返す"""
+    return {"recording": vm.is_recording()}
+
+@app.get("/api/voice/model-status")
+async def voice_model_status():
+    """Whisperモデルの利用可否を返す"""
+    return vm.get_model_status()
+
 # ===== フロントエンド配信 =====
 
 # 静的ファイルのマウント
