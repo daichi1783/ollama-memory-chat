@@ -50,7 +50,7 @@ def start_backend():
 
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
-    port = config.get("app", {}).get("port", 8765)
+    port = config.get("app", {}).get("port", 18765)
 
     uvicorn.run(
         "main:app",
@@ -84,7 +84,7 @@ def main():
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    port = config.get("app", {}).get("port", 8765)
+    port = config.get("app", {}).get("port", 18765)
     app_name = config.get("app", {}).get("name", "Memoria")
 
     print(f"✨ {app_name} を起動しています...")

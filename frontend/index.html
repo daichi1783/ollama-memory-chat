@@ -185,7 +185,7 @@
     // 起動時チェック: Ollamaセットアップ完了済みか確認
     (async function checkSetup() {
       try {
-        const r = await fetch('http://127.0.0.1:8765/api/setup/status');
+        const r = await fetch('http://127.0.0.1:18765/api/setup/status');
         const status = await r.json();
         if (!status.setup_complete) {
           // セットアップが完了していない → セットアップ画面へ

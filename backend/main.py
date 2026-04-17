@@ -75,7 +75,7 @@ app = FastAPI(
 # CORS設定（ローカルのみ許可）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8765", "http://127.0.0.1:8765"],
+    allow_origins=["http://localhost:18765", "http://127.0.0.1:18765"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
@@ -661,13 +661,13 @@ async def serve_settings():
 
 # ===== 起動 =====
 
-def start_server(port: int = 8765):
+def start_server(port: int = 18765):
     """サーバーを起動する"""
     import yaml
     config_path = _config_path()
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
-    port = config.get("app", {}).get("port", 8765)
+    port = config.get("app", {}).get("port", 18765)
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 if __name__ == "__main__":

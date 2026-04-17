@@ -1,5 +1,5 @@
 // frontend/assets/app.js
-const API_BASE = 'http://127.0.0.1:8765';
+const API_BASE = 'http://127.0.0.1:18765';
 
 // ===== Orbital ロゴ SVG (AIアバター用) =====
 const ORBITAL_AVATAR_SVG = `<svg width="32" height="32" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
