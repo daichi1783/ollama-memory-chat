@@ -198,10 +198,11 @@ struct SettingsView: View {
             }
             .listRowBackground(theme.colors.surface0)
 
-            // Change model button
+            // Change model button → ModelManagementView（ローカル+クラウド統合）
             NavigationLink {
-                // Placeholder: ModelManagementView
-                modelManagementPlaceholder
+                ModelManagementView()
+                    .environmentObject(theme)
+                    .environmentObject(llmService)
             } label: {
                 Label {
                     Text("モデルを変更")
@@ -225,26 +226,6 @@ struct SettingsView: View {
         } else {
             return theme.colors.green
         }
-    }
-
-    private var modelManagementPlaceholder: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "cpu.fill")
-                .font(.system(size: 48))
-                .foregroundColor(theme.colors.overlay0)
-
-            Text("モデル管理")
-                .font(.title2.bold())
-                .foregroundColor(theme.colors.text)
-
-            Text("この画面は今後のアップデートで追加されます")
-                .font(.subheadline)
-                .foregroundColor(theme.colors.subtext0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(theme.colors.base)
-        .navigationTitle("モデル管理")
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: - 記憶 (Memory)
