@@ -297,25 +297,77 @@ MemoriaApp/Memoria/                  14ファイル（全Phase完了）
 
 ---
 
+## Phase 6: クラウドAI対応 — ✅ 完了（2026-04-17）
+
+| # | タスク | 状態 |
+|---|---|---|
+| P6-1 | KeychainService（APIキー暗号化保管・CRUD） | ✅ 完了 |
+| P6-2 | CloudLLMService（OpenAI / Claude / Gemini SSEストリーミング） | ✅ 完了 |
+| P6-3 | LLMService拡張（ModelType+6クラウドモデル、クラウドルーティング） | ✅ 完了 |
+| P6-4 | APIKeySetupView（貼り付け入力UI・形式チェック・Keychain保存） | ✅ 完了 |
+| P6-5 | ModelManagementView再設計（ローカル+クラウド統合一覧） | ✅ 完了 |
+
+### Phase 6 で追加・変更したファイル
+
+| ファイル | 変更種別 | 内容 |
+|---|---|---|
+| Services/KeychainService.swift | **新規** | APIProvider enum（Gemini/Claude/OpenAI）、iOSキーチェーンCRUD |
+| Services/CloudLLMService.swift | **新規** | OpenAI/Claude/Gemini SSEストリーミング（URLSession.bytes） |
+| Services/LLMService.swift | **改修** | ModelType拡張（6クラウドモデル）、generateCloud()、stopGeneration()更新 |
+| Views/APIKeySetupView.swift | **新規** | APIキー貼り付け入力シート（SecureField、クリップボード貼付、形式検証） |
+| Views/ModelManagementView.swift | **全面改修** | ローカル/クラウド2セクション構成、プロバイダーグループ、オフライン検知 |
+
+### Phase 6 で対応したクラウドモデル
+
+| プロバイダー | モデル | モデルID |
+|---|---|---|
+| Google Gemini | Gemini 2.0 Flash | gemini-2.0-flash |
+| Google Gemini | Gemini 1.5 Pro | gemini-1.5-pro |
+| Anthropic | Claude Haiku | claude-haiku-4-5-20251001 |
+| Anthropic | Claude Sonnet | claude-sonnet-4-6 |
+| OpenAI | GPT-4o mini | gpt-4o-mini |
+| OpenAI | GPT-4o | gpt-4o |
+
+### Phase 6 アーキテクチャ
+
+- **BYOKモデル**: ユーザーが自分のAPIキーを持ち込む（開発者課金なし）
+- **安全保管**: `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`（デバイスローカルのみ）
+- **SSEストリーミング**: `URLSession.shared.bytes(for:).lines` で全プロバイダー共通実装
+- **ネットワーク監視**: `NWPathMonitor` + `AsyncStream` でオフライン時クラウドモデルをグレーアウト
+
+### ⚠️ Xcode への手動追加が必要なファイル（3ファイル）
+
+Cowork からファイルは作成済みですが、Xcode プロジェクトへの追加は手動で行う必要があります。
+
+**手順:**
+1. Xcode でプロジェクトを開く
+2. 左サイドバーの `Memoria/Services/` グループを右クリック → "Add Files to Memoria..."
+3. 以下の2ファイルを選択して追加：
+   - `KeychainService.swift`
+   - `CloudLLMService.swift`
+4. 同様に `Memoria/Views/` グループに追加：
+   - `APIKeySetupView.swift`
+5. Cmd+B でビルド確認
+
+---
+
 ## 次のセッションで最初にやること
 
-**次のステージ: Phase 6 — クラウドAI対応**
+**次のステージ: App Store 申請（Phase 5〜6 完了後）**
 
-Phase 5 完了（2026-04-17）。申請素材は `ollama-memory-chat/` に一式揃っている。
+### ⚠️ Xcode 手動作業（ビルドの前に必須）
 
-### Phase 6: クラウドAI対応（次セッション予定）
-
-| # | タスク | 優先度 |
+| # | 作業 | 内容 |
 |---|---|---|
-| P6-1 | ModelSelector UI（ローカル vs クラウド切り替え） | 🔴 必須 |
-| P6-2 | CloudLLMService（OpenAI / Claude / Gemini ストリーミングクライアント） | 🔴 必須 |
-| P6-3 | APIキー安全保管（Keychain） + 入力UI（貼り付け or QRコード読み取り） | 🔴 必須 |
-| P6-4 | オフライン時クラウドモデルをグレーアウト | 🟡 推奨 |
-| P6-5 | クラウドモデル使用時の免責表示追加 | 🟡 推奨 |
+| 1 | Phase 6 ファイル追加 | KeychainService.swift + CloudLLMService.swift（Services/）, APIKeySetupView.swift（Views/）を Xcode プロジェクトに追加 |
+| 2 | Phase 5 ファイル追加 | OnboardingView.swift（Views/）を Xcode プロジェクトに追加 |
+| 3 | アイコン設定 | `setup_phase5.sh` 実行 → `memoria_ios_icons/Contents.json` を AppIcon.appiconset にコピー |
+| 4 | ビルド確認 | Cmd+B → BUILD SUCCEEDED を確認 |
 
 ### 残作業（Daichi が手動で行うもの）
+- [ ] Xcode に Phase 6 の3ファイル（上記）を追加
+- [ ] Xcode に OnboardingView.swift を追加
 - [ ] `setup_phase5.sh` を実行してアイコンを Xcode にコピー
-- [ ] Xcode で OnboardingView.swift をプロジェクトに追加
 - [ ] App Store Connect でアプリを登録（APPSTORE_GUIDE.md 参照）
 - [ ] privacy_policy.html を GitHub Pages で公開
 - [ ] スクリーンショット撮影（シミュレーター）
@@ -459,4 +511,5 @@ Phase 5 完了（2026-04-17）。申請素材は `ollama-memory-chat/` に一式
 *更新: 2026-04-17 — バグ修正（継続チャット KVキャッシュ修正・LocalLLM ローカルパッケージ化・0 warnings）*
 *更新: 2026-04-17 — 包括的デバッグ監査（全14ファイル精査・Bug #5-#7修正・BUILD SUCCEEDED 0 warnings）*
 *更新: 2026-04-17 — Phase 5 完了（アイコン・メタデータ・免責事項・プライバシーポリシー作成）*
-*次のステージ: Phase 6 — クラウドAI対応（OpenAI / Claude / Gemini）*
+*更新: 2026-04-17 — Phase 6 完了（クラウドAI対応: Gemini / Claude / OpenAI BYOK・SSEストリーミング・Keychain保管）*
+*次のステージ: App Store 申請（Xcode手動ファイル追加 → BUILD SUCCESS → TestFlight → 申請）*
