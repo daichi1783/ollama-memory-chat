@@ -40,7 +40,7 @@ struct CloudMessage {
 // MARK: - CloudLLMService
 
 @MainActor
-final class CloudLLMService: ObservableObject {
+final class CloudLLMService {
     static let shared = CloudLLMService()
     private init() {}
 
