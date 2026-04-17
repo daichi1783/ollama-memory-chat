@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memoria - プライバシーポリシー / Privacy Policy</title>
+  <style>
+    :root {
+      --base:    #1e1e2e;
+      --surface0:#313244;
+      --surface1:#45475a;
+      --text:    #cdd6f4;
+      --subtext: #a6adc8;
+      --blue:    #89b4fa;
+      --lavender:#b4befe;
+      --mauve:   #cba6f7;
+      --green:   #a6e3a1;
+      --red:     #f38ba8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: var(--base);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--base) 0%, var(--surface0) 100%);
+      border-bottom: 1px solid var(--surface1);
+      padding: 3rem 1rem 2rem;
+      text-align: center;
+    }
+
+    .hero .app-icon {
+      width: 80px; height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #313244, #45475a);
+      margin: 0 auto 1rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: 0 8px 32px rgba(137,180,250,0.2);
+    }
+
+    .hero h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--lavender);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero p.subtitle {
+      color: var(--subtext);
+      font-size: 0.95rem;
+    }
+
+    .lang-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .lang-btn {
+      background: var(--surface0);
+      border: 1px solid var(--surface1);
+      color: var(--text);
+      padding: 0.4rem 1.2rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active, .lang-btn:hover {
+      background: var(--blue);
+      color: var(--base);
+      border-color: var(--blue);
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 2.5rem auto 0;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(166,227,161,0.15);
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-size: 0.78rem;
+      padding: 0.25rem 0.8rem;
+      border-radius: 999px;
+      margin-bottom: 2rem;
+    }
+
+    .section {
+      background: var(--surface0);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.2rem;
+      border: 1px solid var(--surface1);
+    }
+
+    .section h2 {
+      color: var(--lavender);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section p, .section li {
+      color: var(--subtext);
+      font-size: 0.92rem;
+    }
+
+    .section ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .section ul li {
+      padding: 0.3rem 0;
+      padding-left: 1.4rem;
+      position: relative;
+    }
+
+    .section ul li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    .section ul li.no::before {
+      content: "✕";
+      color: var(--red);
+    }
+
+    .highlight-box {
+      background: rgba(137,180,250,0.08);
+      border: 1px solid rgba(137,180,250,0.3);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0 0;
+      color: var(--blue);
+      font-size: 0.9rem;
+    }
+
+    .highlight-box strong {
+      color: var(--blue);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+      margin-top: 0.8rem;
+    }
+
+    .data-table th {
+      background: var(--surface1);
+      color: var(--text);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .data-table td {
+      padding: 0.55rem 0.8rem;
+      border-top: 1px solid var(--surface1);
+      color: var(--subtext);
+    }
+
+    .data-table tr:nth-child(even) td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .tag-yes {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    .tag-no {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    .updated {
+      text-align: center;
+      color: var(--surface1);
+      font-size: 0.78rem;
+      margin-top: 3rem;
+    }
+
+    /* ── Lang sections ── */
+    .lang-ja .en-only { display: none; }
+    .lang-en .ja-only { display: none; }
+    .lang-en .en-only { display: block; }
+    .lang-ja .en-only { display: none; }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="app-icon">🌀</div>
+  <h1>Memoria</h1>
+  <p class="subtitle">Privacy Policy / プライバシーポリシー</p>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('ja')">日本語</button>
+    <button class="lang-btn" onclick="setLang('en')">English</button>
+  </div>
+</div>
+
+<div class="container" id="main-content">
+
+  <!-- ═══════════════ 日本語 ═══════════════ -->
+  <div class="ja-only">
+
+    <div class="badge">✓ データはすべてデバイス内に保存されます</div>
+
+    <div class="section">
+      <h2>📋 基本方針</h2>
+      <p>
+        Memoria（以下「本アプリ」）は、あなたのプライバシーを最優先に設計されたAIアシスタントアプリです。
+        本アプリは、一切のユーザーデータをサーバーへ送信しません。
+      </p>
+      <div class="highlight-box">
+        <strong>🔒 コアポリシー:</strong><br>
+        すべての会話・記憶・設定データは、あなたのiPhoneのみに保存されます。
+        インターネットへのデータ送信は一切行いません（AIモデルの初回ダウンロードを除く）。
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📊 収集するデータ</h2>
+      <table class="data-table">
+        <tr>
+          <th>データ種別</th>
+          <th>収集</th>
+          <th>保存場所</th>
+          <th>外部送信</th>
+        </tr>
+        <tr>
+          <td>チャット履歴</td>
+          <td class="tag-yes">あり</td>
+          <td>端末内SQLite</td>
+          <td class="tag-no">なし</td>
+        </tr>
+        <tr>
+          <td>AI記憶・サマリー</td>
+          <td class="tag-yes">あり</td>
+          <td>端末内SQLite</td>
+          <td class="tag-no">なし</td>
+        </tr>
+        <tr>
+          <td>音声入力データ</td>
+          <td class="tag-no">なし</td>
+          <td>処理のみ（保存なし）</td>
+          <td class="tag-no">なし</td>
+        </tr>
+        <tr>
+          <td>位置情報</td>
+          <td class="tag-no">なし</td>
+          <td>—</td>
+          <td class="tag-no">なし</td>
+        </tr>
+        <tr>
+          <td>連絡先・カレンダー</td>
+          <td class="tag-no">なし</td>
+          <td>—</td>
+          <td class="tag-no">なし</td>
+        </tr>
+        <tr>
+          <td>分析・クラッシュログ</td>
+          <td class="tag-no">なし</td>
+          <td>—</td>
+          <td class="tag-no">なし</td>
+        </tr>
+        <tr>
+          <td>広告識別子（IDFA）</td>
+          <td class="tag-no">なし</td>
+          <td>—</td>
+          <td class="tag-no">なし</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>🎙️ マイク・音声認識の使用</h2>
+      <p>
+        本アプリは音声入力機能のためにマイクを使用します。
+        録音した音声はiPhone内のSFSpeechRecognizer（オフライン）でのみ処理され、
+        テキスト変換後に即座に破棄されます。録音データはどこにも保存・送信されません。
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>🤖 AIモデルとネットワーク</h2>
+      <p>
+        AIモデル（Gemma 3、Google DeepMind）は初回起動時のみHuggingFaceからダウンロードされます。
+        ダウンロード後、推論処理はすべてiPhone内で行われ、ネットワーク通信は一切発生しません。
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>🗑️ データの削除</h2>
+      <ul>
+        <li>アプリのチャット画面から個別セッションを削除できます</li>
+        <li>設定画面から全データを削除できます</li>
+        <li>iPhoneからアプリを削除すると、すべてのデータが完全に削除されます</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>👦 お子様のプライバシー</h2>
+      <p>本アプリは13歳未満のお子様を対象としていません。
+      ただし、個人情報を収集しないため、年齢に関わらず安全に使用できます。</p>
+    </div>
+
+    <div class="section">
+      <h2>📬 お問い合わせ</h2>
+      <p>
+        プライバシーに関するご質問・ご懸念は以下にご連絡ください。<br>
+        Email: <a href="mailto:daichi1783@gmail.com">daichi1783@gmail.com</a>
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>📅 ポリシーの更新</h2>
+      <p>
+        本ポリシーに変更がある場合、このページにて通知します。
+        最終更新日: 2026年4月17日
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ English ═══════════════ -->
+  <div class="en-only" style="display:none">
+
+    <div class="badge">✓ All data stays on your device</div>
+
+    <div class="section">
+      <h2>📋 Overview</h2>
+      <p>
+        Memoria is an AI assistant app designed with your privacy as the top priority.
+        This app never transmits any user data to external servers.
+      </p>
+      <div class="highlight-box">
+        <strong>🔒 Core Policy:</strong><br>
+        All conversations, memories, and settings are stored only on your iPhone.
+        No data is sent over the internet (except the initial AI model download).
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📊 Data Collected</h2>
+      <table class="data-table">
+        <tr>
+          <th>Data Type</th>
+          <th>Collected</th>
+          <th>Storage</th>
+          <th>Transmitted</th>
+        </tr>
+        <tr>
+          <td>Chat History</td>
+          <td class="tag-yes">Yes</td>
+          <td>On-device SQLite</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>AI Memories / Summaries</td>
+          <td class="tag-yes">Yes</td>
+          <td>On-device SQLite</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Voice Input Audio</td>
+          <td class="tag-no">No</td>
+          <td>Processed only (not stored)</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Location</td>
+          <td class="tag-no">No</td>
+          <td>—</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Contacts / Calendar</td>
+          <td class="tag-no">No</td>
+          <td>—</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Analytics / Crash Logs</td>
+          <td class="tag-no">No</td>
+          <td>—</td>
+          <td class="tag-no">No</td>
+        </tr>
+        <tr>
+          <td>Ad Identifier (IDFA)</td>
+          <td class="tag-no">No</td>
+          <td>—</td>
+          <td class="tag-no">No</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>🎙️ Microphone &amp; Speech Recognition</h2>
+      <p>
+        The app uses your microphone for voice input only. Audio is processed
+        entirely on-device using SFSpeechRecognizer (offline mode) and is discarded
+        immediately after transcription. No audio data is stored or transmitted.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>🤖 AI Model &amp; Network</h2>
+      <p>
+        The AI model (Gemma 3 by Google DeepMind) is downloaded from HuggingFace
+        on first launch only. After that, all inference runs on-device with
+        zero network communication.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>🗑️ Deleting Your Data</h2>
+      <ul>
+        <li>Delete individual sessions from the chat screen</li>
+        <li>Delete all data from the Settings screen</li>
+        <li>Uninstalling the app permanently removes all data</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>👦 Children's Privacy</h2>
+      <p>This app is not directed to children under 13. However, since no
+      personal information is collected, it is safe for all ages.</p>
+    </div>
+
+    <div class="section">
+      <h2>📬 Contact</h2>
+      <p>
+        For privacy questions or concerns, contact us at:<br>
+        Email: <a href="mailto:daichi1783@gmail.com">daichi1783@gmail.com</a>
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>📅 Policy Updates</h2>
+      <p>
+        Any changes to this policy will be posted on this page.
+        Last updated: April 17, 2026
+      </p>
+    </div>
+
+  </div>
+
+</div><!-- /.container -->
+
+<p class="updated">Memoria — Privacy Policy · Last updated 2026-04-17</p>
+
+<script>
+function setLang(lang) {
+  const content = document.getElementById('main-content');
+  const btns = document.querySelectorAll('.lang-btn');
+  const jaEl = document.querySelector('.ja-only');
+  const enEl = document.querySelector('.en-only');
+
+  btns.forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+
+  if (lang === 'ja') {
+    jaEl.style.display = '';
+    enEl.style.display = 'none';
+    document.documentElement.lang = 'ja';
+  } else {
+    jaEl.style.display = 'none';
+    enEl.style.display = '';
+    document.documentElement.lang = 'en';
+  }
+}
+</script>
+
+</body>
+</html>
