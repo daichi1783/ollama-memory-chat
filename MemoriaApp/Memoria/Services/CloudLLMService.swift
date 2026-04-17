@@ -126,19 +126,23 @@ final class CloudLLMService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 120
 
-        return try await streamSSE(request: request) { line in
-            guard line.hasPrefix("data: ") else { return nil }
-            let jsonStr = String(line.dropFirst(6))
-            if jsonStr == "[DONE]" { return "" }
+        return try await streamSSE(
+            request: request,
+            tokenParser: { line in
+                guard line.hasPrefix("data: ") else { return nil }
+                let jsonStr = String(line.dropFirst(6))
+                if jsonStr == "[DONE]" { return "" }
 
-            guard let data = jsonStr.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let choices = json["choices"] as? [[String: Any]],
-                  let first = choices.first,
-                  let delta = first["delta"] as? [String: Any],
-                  let text = delta["content"] as? String else { return nil }
-            return text
-        } onToken: onToken
+                guard let data = jsonStr.data(using: .utf8),
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let choices = json["choices"] as? [[String: Any]],
+                      let first = choices.first,
+                      let delta = first["delta"] as? [String: Any],
+                      let text = delta["content"] as? String else { return nil }
+                return text
+            },
+            onToken: onToken
+        )
     }
 
     // MARK: - Claude (Anthropic)
@@ -175,20 +179,24 @@ final class CloudLLMService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 120
 
-        return try await streamSSE(request: request) { line in
-            guard line.hasPrefix("data: ") else { return nil }
-            let jsonStr = String(line.dropFirst(6))
+        return try await streamSSE(
+            request: request,
+            tokenParser: { line in
+                guard line.hasPrefix("data: ") else { return nil }
+                let jsonStr = String(line.dropFirst(6))
 
-            guard let data = jsonStr.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+                guard let data = jsonStr.data(using: .utf8),
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
 
-            // content_block_delta イベントのみテキストを抽出
-            guard let type = json["type"] as? String, type == "content_block_delta",
-                  let delta = json["delta"] as? [String: Any],
-                  let deltaType = delta["type"] as? String, deltaType == "text_delta",
-                  let text = delta["text"] as? String else { return nil }
-            return text
-        } onToken: onToken
+                // content_block_delta イベントのみテキストを抽出
+                guard let type = json["type"] as? String, type == "content_block_delta",
+                      let delta = json["delta"] as? [String: Any],
+                      let deltaType = delta["type"] as? String, deltaType == "text_delta",
+                      let text = delta["text"] as? String else { return nil }
+                return text
+            },
+            onToken: onToken
+        )
     }
 
     // MARK: - Gemini (Google)
@@ -234,20 +242,24 @@ final class CloudLLMService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.timeoutInterval = 120
 
-        return try await streamSSE(request: request) { line in
-            guard line.hasPrefix("data: ") else { return nil }
-            let jsonStr = String(line.dropFirst(6))
+        return try await streamSSE(
+            request: request,
+            tokenParser: { line in
+                guard line.hasPrefix("data: ") else { return nil }
+                let jsonStr = String(line.dropFirst(6))
 
-            guard let data = jsonStr.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let candidates = json["candidates"] as? [[String: Any]],
-                  let first = candidates.first,
-                  let content = first["content"] as? [String: Any],
-                  let parts = content["parts"] as? [[String: Any]],
-                  let part = parts.first,
-                  let text = part["text"] as? String else { return nil }
-            return text
-        } onToken: onToken
+                guard let data = jsonStr.data(using: .utf8),
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let candidates = json["candidates"] as? [[String: Any]],
+                      let first = candidates.first,
+                      let content = first["content"] as? [String: Any],
+                      let parts = content["parts"] as? [[String: Any]],
+                      let part = parts.first,
+                      let text = part["text"] as? String else { return nil }
+                return text
+            },
+            onToken: onToken
+        )
     }
 
     // MARK: - SSE Stream Core
