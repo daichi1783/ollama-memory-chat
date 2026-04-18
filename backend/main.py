@@ -143,6 +143,7 @@ class ChatResponse(BaseModel):
 class CommandCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     description: str = Field(..., min_length=1, max_length=500)
+    prompt_template: Optional[str] = Field(None, max_length=4000)  # 任意：指定なければdescriptionから自動生成
 
     @validator('name')
     def validate_cmd_name(cls, v):
@@ -152,6 +153,7 @@ class CommandCreate(BaseModel):
 
 class CommandUpdate(BaseModel):
     description: str = Field(..., min_length=1, max_length=500)
+    prompt_template: Optional[str] = Field(None, max_length=4000)
 
 class AIEngineUpdate(BaseModel):
     engine: str           # "ollama" / "openai_compatible" / "claude" / "gemini"
@@ -454,8 +456,8 @@ async def get_command_names():
 
 @app.post("/api/commands")
 async def create_command(cmd: CommandCreate):
-    """ユーザー定義コマンドを作成する"""
-    result = cm.add_user_command(cmd.name, cmd.description)
+    """ユーザー定義コマンドを作成する（組み込みコマンド名でも上書き可能）"""
+    result = cm.add_user_command(cmd.name, cmd.description, cmd.prompt_template or "")
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
     return result
@@ -463,7 +465,7 @@ async def create_command(cmd: CommandCreate):
 @app.put("/api/commands/{name}")
 async def update_command(name: str, cmd: CommandUpdate):
     """ユーザー定義コマンドを更新する"""
-    result = cm.update_user_command(name, cmd.description)
+    result = cm.update_user_command(name, cmd.description, cmd.prompt_template or "")
     if not result["success"]:
         raise HTTPException(status_code=404, detail=result["message"])
     return result

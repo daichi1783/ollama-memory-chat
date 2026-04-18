@@ -248,24 +248,28 @@
           <div style="padding:16px; color:var(--text-secondary); font-size:14px;">読み込み中...</div>
         </div>
 
-        <!-- Fix⑯: コマンド追加フォーム（説明文を改善） -->
+        <!-- コマンド追加フォーム（iOS版 AddCommandView と同等） -->
         <div class="add-command-form">
-          <div style="font-size:14px; font-weight:600; margin-bottom:4px; color:var(--text-primary);" data-i18n="settings.commands.add.title">＋ 新しいコマンドを追加</div>
-          <!-- Fix⑯: 説明文と例を追加 -->
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px; color:var(--text-primary);">＋ 新しいコマンドを追加（または組み込みコマンドを上書き）</div>
           <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; padding:8px; background:var(--bg-tertiary); border-radius:6px; border-left:3px solid var(--accent);">
             💡 追加したコマンドはチャット画面で <code style="background:var(--bg-primary);padding:1px 5px;border-radius:3px;">/コマンド名</code> と入力して使えます。<br>
-            「説明」には AIへの指示文を書きます。例: <em>/summarize → 「入力した文章を3行で要約して」</em>
+            テンプレートに <code style="background:var(--bg-primary);padding:1px 5px;border-radius:3px;">{input}</code> と書くと、コマンド後に入力したテキストが埋め込まれます。<br>
+            <strong>組み込みコマンド（cal, english 等）と同じ名前を入れると上書きできます。</strong>
           </div>
           <div class="form-row">
-            <label data-i18n="settings.commands.name.label">コマンド名</label>
+            <label>コマンド名</label>
             <input type="text" id="newCmdName" class="form-input" placeholder="例: summarize（/は不要）">
           </div>
           <div class="form-row">
-            <label data-i18n="settings.commands.desc.label">説明（AIへの指示）</label>
+            <label>説明（コマンド一覧に表示）</label>
             <input type="text" id="newCmdDesc" class="form-input" placeholder="例: 入力した文章を3行で要約して">
           </div>
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
+            <label>AIへの指示テンプレート <span style="font-weight:normal; color:var(--text-secondary);">（空欄にすると説明文を自動変換）</span></label>
+            <textarea id="newCmdTemplate" class="form-input" rows="4" style="width:100%; resize:vertical; font-family:monospace; font-size:12px;" placeholder="例:&#10;以下の文章を3行で要約してください。&#10;&#10;文章: {input}&#10;&#10;要約:"></textarea>
+          </div>
           <div style="text-align:right;">
-            <button class="btn btn-primary" onclick="addCommand()" data-i18n="settings.commands.add.btn">追加する</button>
+            <button class="btn btn-primary" onclick="addCommand()">追加する</button>
           </div>
         </div>
       </div>
@@ -710,6 +714,7 @@
     async function addCommand() {
       const name = document.getElementById('newCmdName').value.trim();
       const desc = document.getElementById('newCmdDesc').value.trim();
+      const template = (document.getElementById('newCmdTemplate')?.value || '').trim();
 
       if (!name || !desc) {
         showToast('コマンド名と説明を入力してください', 'error');
@@ -717,10 +722,11 @@
       }
 
       try {
-        await apiRequest('POST', '/api/commands', { name, description: desc });
+        await apiRequest('POST', '/api/commands', { name, description: desc, prompt_template: template || null });
         showToast(`✅ /${name.replace('/', '')} を追加しました`);
         document.getElementById('newCmdName').value = '';
         document.getElementById('newCmdDesc').value = '';
+        if (document.getElementById('newCmdTemplate')) document.getElementById('newCmdTemplate').value = '';
         await loadCommands();
         // キャッシュを更新（チャット画面のサジェストに即反映）
         if (typeof refreshCommandCache === 'function') await refreshCommandCache();

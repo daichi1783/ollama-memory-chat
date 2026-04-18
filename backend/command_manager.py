@@ -32,7 +32,21 @@ _HARDCODED_COMMANDS = [
     {
         "name": "cal",
         "description": "入力された言語（日本語・英語・スペイン語）を自動判定して校正します",
-        "prompt": "以下のテキストの言語（日本語・英語・スペイン語）を自動判定し、そのネイティブスピーカーとして校正してください。誤字・脱字・文法ミス・不自然な表現を修正し、修正箇所とその理由を入力と同じ言語で説明してください。\n\nテキスト: {input}"
+        "prompt": (
+            "You are a native speaker proofreader. "
+            "Detect the language of the input text (Japanese / English / Spanish) "
+            "and respond ENTIRELY in that same language. Never switch languages.\n\n"
+            "Example (Spanish input → Spanish output):\n"
+            "Input: Si, yo miro tu profilo\n"
+            "✅ Corrected: Sí, estoy viendo tu perfil.\n"
+            "📝 Changes:\n"
+            "• \"Si\" → \"Sí\" (accent required)\n"
+            "• \"yo miro\" → \"estoy viendo\" (continuous tense is more natural)\n"
+            "• \"profilo\" → \"perfil\" (Italian word — Spanish is \"perfil\")\n\n"
+            "Now proofread this text and respond in its language:\n"
+            "Input: {input}\n"
+            "✅ Corrected:"
+        )
     },
     {
         "name": "grammar",
@@ -79,47 +93,67 @@ def get_user_commands() -> list:
     return [dict(r) for r in rows]
 
 def get_all_commands() -> list:
-    """全コマンド（組み込み + ユーザー定義）を返す"""
-    builtin = [{"source": "builtin", **c} for c in get_builtin_commands()]
-    user = [{"source": "user", **c} for c in get_user_commands()]
-    return builtin + user
+    """全コマンドを返す。ユーザー定義コマンドが組み込みコマンドより優先（上書き可能）"""
+    user_cmds = get_user_commands()
+    user_names = {c["name"] for c in user_cmds}
+    # ユーザーに上書きされていない組み込みコマンドのみ含める
+    builtin = [{"source": "builtin", **c} for c in get_builtin_commands() if c["name"] not in user_names]
+    user = [{"source": "user", **c} for c in user_cmds]
+    return user + builtin  # ユーザー定義を先頭に（優先）
 
-def add_user_command(name: str, description: str) -> dict:
+def add_user_command(name: str, description: str, prompt_template: str = "") -> dict:
     """
-    ユーザー定義コマンドを追加する
-    descriptionは自然言語。そのままprompt_templateとして保存。
-    {input}プレースホルダーを自動で追加する。
+    ユーザー定義コマンドを追加する（または組み込みコマンドを上書き）
+    prompt_templateが指定されていればそれを使用し、なければdescriptionから自動生成。
+    {input}プレースホルダーを含める。
+    組み込みコマンドと同名でも上書きとして保存できる（UPSERT）。
     """
     # 名前の正規化（スラッシュを除去、小文字化、スペースをアンダースコアに）
     clean_name = name.lstrip("/").lower().replace(" ", "_")
 
-    # prompt_templateを構築
-    prompt_template = f"{description}\n\n対象テキスト: {{input}}"
+    # prompt_templateを決定
+    if prompt_template and "{input}" in prompt_template:
+        final_template = prompt_template
+    elif prompt_template:
+        # {input} が含まれていない場合は末尾に追加
+        final_template = f"{prompt_template}\n\n対象テキスト: {{input}}"
+    else:
+        # 説明文から自動生成
+        final_template = f"{description}\n\n対象テキスト: {{input}}"
 
     now = datetime.now().isoformat()
     conn = get_db_connection()
     try:
+        # UPSERT: 同名コマンドがあれば更新、なければ挿入（組み込みコマンドの上書きを許可）
         conn.execute(
-            "INSERT INTO user_commands (name, description, prompt_template, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (clean_name, description, prompt_template, now, now)
+            """INSERT INTO user_commands (name, description, prompt_template, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(name) DO UPDATE SET
+                 description = excluded.description,
+                 prompt_template = excluded.prompt_template,
+                 updated_at = excluded.updated_at""",
+            (clean_name, description, final_template, now, now)
         )
         conn.commit()
-        return {"success": True, "name": clean_name, "message": f"コマンド /{clean_name} を追加しました"}
-    except sqlite3.IntegrityError:
-        return {"success": False, "message": f"コマンド /{clean_name} はすでに存在します"}
+        return {"success": True, "name": clean_name, "message": f"コマンド /{clean_name} を保存しました"}
     finally:
         conn.close()
 
-def update_user_command(name: str, description: str) -> dict:
+def update_user_command(name: str, description: str, prompt_template: str = "") -> dict:
     """ユーザー定義コマンドを更新する"""
     clean_name = name.lstrip("/").lower()
-    prompt_template = f"{description}\n\n対象テキスト: {{input}}"
+    if prompt_template and "{input}" in prompt_template:
+        final_template = prompt_template
+    elif prompt_template:
+        final_template = f"{prompt_template}\n\n対象テキスト: {{input}}"
+    else:
+        final_template = f"{description}\n\n対象テキスト: {{input}}"
     now = datetime.now().isoformat()
 
     conn = get_db_connection()
     cursor = conn.execute(
         "UPDATE user_commands SET description = ?, prompt_template = ?, updated_at = ? WHERE name = ?",
-        (description, prompt_template, now, clean_name)
+        (description, final_template, now, clean_name)
     )
     conn.commit()
     affected = cursor.rowcount
