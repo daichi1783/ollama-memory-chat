@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コマンド管理 — Memoria</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    /* ===== コマンド管理専用スタイル ===== */
+    .cmd-page-container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    .cmd-page-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+
+    .cmd-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .cmd-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .cmd-section-header .section-icon {
+      margin-right: 8px;
+    }
+
+    .cmd-section-count {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .cmd-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      cursor: default;
+    }
+
+    .cmd-row:last-child {
+      border-bottom: none;
+    }
+
+    .cmd-row.clickable:hover {
+      background: var(--bg-tertiary);
+      cursor: pointer;
+    }
+
+    .cmd-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cmd-row-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    .cmd-row-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cmd-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .cmd-badge.overridden {
+      background: rgba(203, 166, 247, 0.2);
+      color: #cba6f7;
+      border: 1px solid rgba(203, 166, 247, 0.4);
+    }
+
+    .cmd-badge.builtin {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .cmd-badge.user {
+      background: rgba(137, 180, 250, 0.15);
+      color: #89b4fa;
+      border: 1px solid rgba(137, 180, 250, 0.3);
+    }
+
+    .cmd-row-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .cmd-icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .cmd-icon-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .cmd-icon-btn.delete:hover {
+      background: rgba(243, 139, 168, 0.15);
+      color: #f38ba8;
+      border-color: rgba(243, 139, 168, 0.4);
+    }
+
+    .cmd-icon-btn.edit:hover {
+      background: rgba(137, 180, 250, 0.15);
+      color: #89b4fa;
+      border-color: rgba(137, 180, 250, 0.4);
+    }
+
+    .cmd-section-empty {
+      padding: 24px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .cmd-add-btn-wrap {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .cmd-add-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      background: transparent;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .cmd-add-btn:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--accent);
+    }
+
+    /* ===== モーダル ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 540px;
+      margin: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      transform: translateY(16px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .modal-close-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 20px 24px;
+    }
+
+    .modal-hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .modal-form-row {
+      margin-bottom: 16px;
+    }
+
+    .modal-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.15s;
+    }
+
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .modal-input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .modal-textarea {
+      font-family: monospace;
+      font-size: 12px;
+      resize: vertical;
+      min-height: 110px;
+    }
+
+    .modal-template-wrap {
+      position: relative;
+    }
+
+    .modal-input-insert-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--accent);
+      font-size: 11px;
+      font-family: monospace;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .modal-input-insert-btn:hover {
+      background: var(--bg-secondary);
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 0 24px 20px;
+    }
+
+    .modal-error {
+      font-size: 13px;
+      color: #f38ba8;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    /* 組み込みコマンドのテンプレートプレビュー */
+    .cmd-template-preview {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .builtin-read-only-note {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- サイドバー -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-wrap">
+        <svg class="memoria-logo" width="36" height="36" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#89b4fa"/>
+              <stop offset="50%" stop-color="#cba6f7"/>
+              <stop offset="100%" stop-color="#f5c2e7"/>
+            </linearGradient>
+          </defs>
+          <circle cx="40" cy="40" r="36" fill="url(#logoGrad)"/>
+          <circle cx="40" cy="40" r="20" fill="white" opacity="0.15"/>
+          <circle cx="40" cy="40" r="10" fill="white" opacity="0.2"/>
+          <circle cx="40" cy="40" r="4" fill="white" opacity="0.9"/>
+          <circle cx="40" cy="18" r="3.5" fill="white" opacity="0.8"/>
+          <circle cx="62" cy="40" r="3.5" fill="white" opacity="0.8"/>
+          <circle cx="40" cy="62" r="3.5" fill="white" opacity="0.8"/>
+          <circle cx="18" cy="40" r="3.5" fill="white" opacity="0.8"/>
+        </svg>
+        <div>
+          <h1>Memoria</h1>
+          <div class="version">v1.0.0</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        チャット
+      </a>
+      <a href="/commands" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+        コマンド管理
+      </a>
+      <a href="/settings" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        設定
+      </a>
+    </nav>
+    <div class="status-indicator">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText" class="status-text">確認中...</span>
+    </div>
+  </aside>
+
+  <!-- メインエリア -->
+  <main class="main" style="overflow-y: auto;">
+    <div class="cmd-page-container">
+      <h2 class="cmd-page-title">⚡ コマンド管理</h2>
+
+      <!-- ===== ユーザー定義コマンド ===== -->
+      <div class="cmd-section">
+        <div class="cmd-section-header">
+          <span><span class="section-icon">🛠</span>カスタムコマンド</span>
+          <span class="cmd-section-count" id="userCmdCount">—</span>
+        </div>
+        <div id="userCmdList">
+          <div class="cmd-section-empty">読み込み中...</div>
+        </div>
+        <div class="cmd-add-btn-wrap">
+          <button class="cmd-add-btn" onclick="openAddModal()">＋ 新しいコマンドを追加</button>
+        </div>
+      </div>
+
+      <!-- ===== 組み込みコマンド ===== -->
+      <div class="cmd-section">
+        <div class="cmd-section-header">
+          <span><span class="section-icon">📦</span>組み込みコマンド</span>
+          <span class="cmd-section-count" id="builtinCmdCount">—</span>
+        </div>
+        <div id="builtinCmdList">
+          <div class="cmd-section-empty">読み込み中...</div>
+        </div>
+      </div>
+
+      <!-- 使い方ヒント -->
+      <div style="font-size:13px; color:var(--text-secondary); padding:4px 4px 0; line-height:1.7;">
+        💡 チャット画面で <code style="background:var(--bg-secondary);padding:1px 6px;border-radius:4px;font-size:12px;">/コマンド名 テキスト</code> と入力して使えます。
+        テンプレートの <code style="background:var(--bg-secondary);padding:1px 6px;border-radius:4px;font-size:12px;">{input}</code> にテキストが埋め込まれます。<br>
+        組み込みコマンドをタップするとテンプレートを確認・上書き編集できます。
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== 追加 / 編集 モーダル ===== -->
+  <div class="modal-overlay" id="cmdModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">コマンドを追加</span>
+        <button class="modal-close-btn" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-hint" id="modalHint">
+          コマンド名と説明を入力してください。テンプレートに <code>{input}</code> と書くと、コマンド後のテキストが埋め込まれます。
+          <br><strong>組み込みコマンド（cal, english など）と同じ名前を入れると上書きできます。</strong>
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-label" for="modalCmdName">コマンド名 <span style="font-weight:400;text-transform:none;letter-spacing:0;">（/は不要）</span></label>
+          <input type="text" id="modalCmdName" class="modal-input" placeholder="例: summarize">
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-label" for="modalCmdDesc">説明</label>
+          <input type="text" id="modalCmdDesc" class="modal-input" placeholder="例: 入力した文章を3行で要約します">
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-label" for="modalCmdTemplate">AIへの指示テンプレート <span style="font-weight:400;text-transform:none;letter-spacing:0;">（空欄だと説明文を自動変換）</span></label>
+          <div class="modal-template-wrap">
+            <textarea id="modalCmdTemplate" class="modal-input modal-textarea" rows="5"
+              placeholder="例:&#10;以下の文章を3行で要約してください。&#10;&#10;文章: {input}&#10;&#10;要約:"></textarea>
+            <button class="modal-input-insert-btn" onclick="insertInputPlaceholder()">{input} を挿入</button>
+          </div>
+        </div>
+        <div class="modal-error" id="modalError"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+        <button class="btn btn-primary" id="modalSaveBtn" onclick="saveCommand()">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 組み込みコマンド 詳細 / 上書きモーダル ===== -->
+  <div class="modal-overlay" id="builtinModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title" id="builtinModalTitle">組み込みコマンドを確認</span>
+        <button class="modal-close-btn" onclick="closeBuiltinModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-form-row">
+          <label class="modal-label">コマンド名</label>
+          <div style="font-size:15px;font-weight:600;color:var(--accent);font-family:monospace;" id="builtinModalName"></div>
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-label">説明</label>
+          <div style="font-size:14px;color:var(--text-primary);" id="builtinModalDesc"></div>
+        </div>
+        <div class="modal-form-row">
+          <label class="modal-label" for="builtinModalTemplate">テンプレート（編集して上書き保存できます）</label>
+          <div class="modal-template-wrap">
+            <textarea id="builtinModalTemplate" class="modal-input modal-textarea" rows="6"></textarea>
+            <button class="modal-input-insert-btn" onclick="insertBuiltinInputPlaceholder()">{input} を挿入</button>
+          </div>
+          <div class="builtin-read-only-note" id="builtinModalNote"></div>
+        </div>
+        <div class="modal-error" id="builtinModalError"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeBuiltinModal()">閉じる</button>
+        <button class="btn btn-secondary" id="builtinResetBtn" onclick="resetBuiltinOverride()" style="display:none;">上書きを解除</button>
+        <button class="btn btn-primary" onclick="saveBuiltinOverride()">上書き保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/assets/i18n.js"></script>
+  <script src="/assets/app.js"></script>
+  <script>
+    // ===================================================
+    // 状態管理
+    // ===================================================
+    let _allCommands = [];          // 全コマンド（API応答そのまま）
+    let _modalMode = 'add';         // 'add' | 'edit'
+    let _editingCmdName = null;     // 編集中のコマンド名（edit時）
+    let _builtinCurrent = null;     // 現在開いている組み込みコマンド情報
+
+    // ===================================================
+    // 初期化
+    // ===================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadCommands();
+      checkStatus();
+      // ESCキーでモーダルを閉じる
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          closeModal();
+          closeBuiltinModal();
+        }
+      });
+    });
+
+    // ===================================================
+    // コマンド読み込み・描画
+    // ===================================================
+    async function loadCommands() {
+      try {
+        const data = await apiRequest('GET', '/api/commands');
+        _allCommands = data.commands || [];
+        renderCommands(_allCommands);
+      } catch (e) {
+        document.getElementById('userCmdList').innerHTML =
+          '<div class="cmd-section-empty" style="color:var(--danger);">読み込みに失敗しました</div>';
+        document.getElementById('builtinCmdList').innerHTML =
+          '<div class="cmd-section-empty" style="color:var(--danger);">読み込みに失敗しました</div>';
+      }
+    }
+
+    function renderCommands(commands) {
+      const userCmds = commands.filter(c => c.source === 'user');
+      const builtinCmds = commands.filter(c => c.source === 'builtin');
+
+      // ---- ユーザー定義コマンド ----
+      const userEl = document.getElementById('userCmdList');
+      document.getElementById('userCmdCount').textContent = userCmds.length + '件';
+      if (userCmds.length === 0) {
+        userEl.innerHTML = '<div class="cmd-section-empty">カスタムコマンドはまだありません<br><span style="font-size:12px;">下の「追加」ボタンから作成できます</span></div>';
+      } else {
+        userEl.innerHTML = userCmds.map(cmd => `
+          <div class="cmd-row">
+            <div class="cmd-row-info">
+              <div class="cmd-row-name">/${escapeHtml(cmd.name)}</div>
+              <div class="cmd-row-desc">${escapeHtml(cmd.description || '')}</div>
+            </div>
+            <span class="cmd-badge user">カスタム</span>
+            <div class="cmd-row-actions">
+              <button class="cmd-icon-btn edit" title="編集" onclick="openEditModal('${escapeAttr(cmd.name)}')">✏️</button>
+              <button class="cmd-icon-btn delete" title="削除" onclick="deleteCommand('${escapeAttr(cmd.name)}')">🗑</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // ---- 組み込みコマンド ----
+      // 上書きされているコマンド名のセット（ユーザーコマンドから逆引き）
+      const overriddenNames = new Set(
+        _allCommands
+          .filter(c => c.source === 'user')
+          .map(c => c.name)
+      );
+      // 組み込みのデフォルト一覧（APIで source=builtin が返る = 上書きなし）
+      // 上書きされているものはユーザーコマンドとして返るため、
+      // ここでは全組み込みコマンドをハードコードリストから取得する
+      const builtinEl = document.getElementById('builtinCmdList');
+      // APIでは上書きされた組み込みはuser扱いになるため、
+      // builtin として返ってくるものに加えて「上書き中ユーザーコマンド」も表示する
+      // → 完全な組み込み一覧は /api/commands/builtin から取得するか、
+      //   ここではbuiltinCmds + 上書き中ユーザーコマンドを合わせて表示する
+
+      // 上書き中のユーザーコマンドのうち、もともと組み込みだったものを識別するため
+      // /api/commands/names?source=builtin が使えないので、
+      // ハードコードで既知の組み込み名リストを管理する
+      const KNOWN_BUILTINS = ['english', 'japanese', 'spanish', 'cal', 'grammar', 'memory', 'clear', 'help', 'remember'];
+
+      // 上書き中ユーザーコマンド（名前が既知の組み込みに一致）
+      const overridingUserCmds = userCmds.filter(c => KNOWN_BUILTINS.includes(c.name));
+      // 表示対象: builtinCmds(上書きなし) + overridingUserCmds(上書き中)
+      // KNOWNBUILTINSの順で並べる
+      const allBuiltinDisplay = [
+        ...builtinCmds,
+        ...overridingUserCmds
+      ].sort((a, b) => {
+        const ia = KNOWN_BUILTINS.indexOf(a.name);
+        const ib = KNOWN_BUILTINS.indexOf(b.name);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      });
+
+      document.getElementById('builtinCmdCount').textContent = allBuiltinDisplay.length + '件';
+
+      if (allBuiltinDisplay.length === 0) {
+        builtinEl.innerHTML = '<div class="cmd-section-empty">組み込みコマンドが見つかりません</div>';
+      } else {
+        builtinEl.innerHTML = allBuiltinDisplay.map(cmd => {
+          const isOverriding = cmd.source === 'user';
+          return `
+            <div class="cmd-row clickable" onclick="openBuiltinModal('${escapeAttr(cmd.name)}', ${isOverriding})">
+              <div class="cmd-row-info">
+                <div class="cmd-row-name">/${escapeHtml(cmd.name)}</div>
+                <div class="cmd-row-desc">${escapeHtml(cmd.description || '')}</div>
+              </div>
+              ${isOverriding
+                ? '<span class="cmd-badge overridden">上書き中</span>'
+                : '<span class="cmd-badge builtin">組み込み</span>'
+              }
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   style="width:16px;height:16px;color:var(--text-secondary);flex-shrink:0;">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // ===================================================
+    // 追加モーダル
+    // ===================================================
+    function openAddModal() {
+      _modalMode = 'add';
+      _editingCmdName = null;
+      document.getElementById('modalTitle').textContent = '新しいコマンドを追加';
+      document.getElementById('modalCmdName').value = '';
+      document.getElementById('modalCmdName').disabled = false;
+      document.getElementById('modalCmdDesc').value = '';
+      document.getElementById('modalCmdTemplate').value = '';
+      document.getElementById('modalHint').style.display = '';
+      document.getElementById('modalError').style.display = 'none';
+      document.getElementById('modalError').textContent = '';
+      document.getElementById('cmdModal').classList.add('open');
+      setTimeout(() => document.getElementById('modalCmdName').focus(), 150);
+    }
+
+    function openEditModal(name) {
+      const cmd = _allCommands.find(c => c.name === name);
+      if (!cmd) return;
+      _modalMode = 'edit';
+      _editingCmdName = name;
+      document.getElementById('modalTitle').textContent = 'コマンドを編集';
+      document.getElementById('modalCmdName').value = cmd.name;
+      document.getElementById('modalCmdName').disabled = true;  // 編集時は名前変更不可
+      document.getElementById('modalCmdDesc').value = cmd.description || '';
+      document.getElementById('modalCmdTemplate').value = cmd.prompt_template || cmd.prompt || '';
+      document.getElementById('modalHint').style.display = 'none';
+      document.getElementById('modalError').style.display = 'none';
+      document.getElementById('modalError').textContent = '';
+      document.getElementById('cmdModal').classList.add('open');
+      setTimeout(() => document.getElementById('modalCmdDesc').focus(), 150);
+    }
+
+    function closeModal() {
+      document.getElementById('cmdModal').classList.remove('open');
+    }
+
+    function insertInputPlaceholder() {
+      const ta = document.getElementById('modalCmdTemplate');
+      const pos = ta.selectionStart;
+      const val = ta.value;
+      ta.value = val.slice(0, pos) + '{input}' + val.slice(pos);
+      ta.selectionStart = ta.selectionEnd = pos + 7;
+      ta.focus();
+    }
+
+    async function saveCommand() {
+      const name = document.getElementById('modalCmdName').value.trim();
+      const desc = document.getElementById('modalCmdDesc').value.trim();
+      const template = document.getElementById('modalCmdTemplate').value.trim();
+      const errEl = document.getElementById('modalError');
+
+      if (!desc) {
+        errEl.textContent = '説明を入力してください';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (_modalMode === 'add' && !name) {
+        errEl.textContent = 'コマンド名を入力してください';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        if (_modalMode === 'edit') {
+          await apiRequest('PUT', `/api/commands/${_editingCmdName}`, {
+            description: desc,
+            prompt_template: template || null
+          });
+          showToast(`✅ /${_editingCmdName} を更新しました`);
+        } else {
+          await apiRequest('POST', '/api/commands', {
+            name,
+            description: desc,
+            prompt_template: template || null
+          });
+          showToast(`✅ /${name.replace('/', '')} を追加しました`);
+        }
+        closeModal();
+        await loadCommands();
+        if (typeof refreshCommandCache === 'function') await refreshCommandCache();
+      } catch (e) {
+        errEl.textContent = '❌ ' + (e.message || '保存に失敗しました');
+        errEl.style.display = 'block';
+      }
+    }
+
+    // ===================================================
+    // 組み込みコマンドモーダル
+    // ===================================================
+    // 組み込みコマンドのデフォルトテンプレートをAPIから取得するためのキャッシュ
+    let _builtinDefaults = {};
+
+    async function openBuiltinModal(name, isOverriding) {
+      const cmd = _allCommands.find(c => c.name === name);
+      if (!cmd) return;
+
+      _builtinCurrent = { name, isOverriding };
+
+      document.getElementById('builtinModalTitle').textContent =
+        isOverriding ? '組み込みコマンド（上書き中）' : '組み込みコマンドを確認・編集';
+      document.getElementById('builtinModalName').textContent = '/' + name;
+      document.getElementById('builtinModalDesc').textContent = cmd.description || '';
+
+      // テンプレートを設定
+      const template = cmd.prompt_template || cmd.prompt || '';
+      document.getElementById('builtinModalTemplate').value = template;
+
+      // 上書き中の場合は「解除」ボタンを表示
+      document.getElementById('builtinResetBtn').style.display = isOverriding ? '' : 'none';
+
+      const noteEl = document.getElementById('builtinModalNote');
+      noteEl.textContent = isOverriding
+        ? '⚠️ 現在このコマンドは上書き中です。「上書きを解除」するとデフォルトに戻ります。'
+        : 'テンプレートを編集して「上書き保存」すると、このコマンドをカスタマイズできます。';
+
+      document.getElementById('builtinModalError').style.display = 'none';
+      document.getElementById('builtinModal').classList.add('open');
+    }
+
+    function closeBuiltinModal() {
+      document.getElementById('builtinModal').classList.remove('open');
+      _builtinCurrent = null;
+    }
+
+    function insertBuiltinInputPlaceholder() {
+      const ta = document.getElementById('builtinModalTemplate');
+      const pos = ta.selectionStart;
+      const val = ta.value;
+      ta.value = val.slice(0, pos) + '{input}' + val.slice(pos);
+      ta.selectionStart = ta.selectionEnd = pos + 7;
+      ta.focus();
+    }
+
+    async function saveBuiltinOverride() {
+      if (!_builtinCurrent) return;
+      const { name } = _builtinCurrent;
+      const cmd = _allCommands.find(c => c.name === name);
+      const desc = cmd ? (cmd.description || '') : '';
+      const template = document.getElementById('builtinModalTemplate').value.trim();
+      const errEl = document.getElementById('builtinModalError');
+
+      try {
+        // 組み込みコマンドを上書き保存（UPSERT）
+        await apiRequest('POST', '/api/commands', {
+          name,
+          description: desc,
+          prompt_template: template || null
+        });
+        showToast(`✅ /${name} を上書き保存しました`);
+        closeBuiltinModal();
+        await loadCommands();
+        if (typeof refreshCommandCache === 'function') await refreshCommandCache();
+      } catch (e) {
+        errEl.textContent = '❌ ' + (e.message || '保存に失敗しました');
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function resetBuiltinOverride() {
+      if (!_builtinCurrent) return;
+      const { name } = _builtinCurrent;
+      if (!confirm(`/${name} の上書きを解除して、デフォルトに戻しますか？`)) return;
+      try {
+        await apiRequest('DELETE', `/api/commands/${name}`);
+        showToast(`✅ /${name} をデフォルトに戻しました`);
+        closeBuiltinModal();
+        await loadCommands();
+        if (typeof refreshCommandCache === 'function') await refreshCommandCache();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    // ===================================================
+    // 削除
+    // ===================================================
+    async function deleteCommand(name) {
+      if (!confirm(`コマンド /${name} を削除しますか？`)) return;
+      try {
+        await apiRequest('DELETE', `/api/commands/${name}`);
+        showToast(`✅ /${name} を削除しました`);
+        await loadCommands();
+        if (typeof refreshCommandCache === 'function') await refreshCommandCache();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    // ===================================================
+    // ユーティリティ
+    // ===================================================
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+      if (!str) return '';
+      return str.replace(/'/g, "\\'");
+    }
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings — Memoria</title>
+  <title>設定 — Memoria</title>
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -41,12 +41,19 @@
         </svg>
         チャット
       </a>
+      <a href="/commands" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+        コマンド管理
+      </a>
       <a href="/settings" class="nav-item active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
-        設定・コマンド管理
+        設定
       </a>
     </nav>
     <div class="status-indicator">
@@ -58,7 +65,7 @@
   <!-- メインエリア -->
   <main class="main" style="overflow-y: auto;">
     <div class="settings-container">
-      <h2 style="font-size:22px; margin-bottom:24px; font-weight:600;">⚙️ <span data-i18n="settings.title">設定・コマンド管理</span></h2>
+      <h2 style="font-size:22px; margin-bottom:24px; font-weight:600;">⚙️ <span data-i18n="settings.title">設定</span></h2>
 
       <!-- AIエンジン設定 -->
       <div class="settings-section">
@@ -239,41 +246,18 @@
         </div>
       </div>
 
-      <!-- コマンド管理 -->
+      <!-- コマンド管理はコマンド管理ページに移動 -->
       <div class="settings-section">
-        <div class="settings-section-header">⚡ <span data-i18n="settings.commands.section">コマンド管理</span></div>
-
-        <!-- コマンドリスト -->
-        <div id="commandList" class="command-list">
-          <div style="padding:16px; color:var(--text-secondary); font-size:14px;">読み込み中...</div>
-        </div>
-
-        <!-- コマンド追加フォーム（iOS版 AddCommandView と同等） -->
-        <div class="add-command-form">
-          <div style="font-size:14px; font-weight:600; margin-bottom:4px; color:var(--text-primary);">＋ 新しいコマンドを追加（または組み込みコマンドを上書き）</div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; padding:8px; background:var(--bg-tertiary); border-radius:6px; border-left:3px solid var(--accent);">
-            💡 追加したコマンドはチャット画面で <code style="background:var(--bg-primary);padding:1px 5px;border-radius:3px;">/コマンド名</code> と入力して使えます。<br>
-            テンプレートに <code style="background:var(--bg-primary);padding:1px 5px;border-radius:3px;">{input}</code> と書くと、コマンド後に入力したテキストが埋め込まれます。<br>
-            <strong>組み込みコマンド（cal, english 等）と同じ名前を入れると上書きできます。</strong>
+        <div class="settings-section-header">⚡ <span>コマンド管理</span></div>
+        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:14px; color:var(--text-secondary);">
+            スラッシュコマンドの追加・編集・削除は専用ページで行えます
           </div>
-          <div class="form-row">
-            <label>コマンド名</label>
-            <input type="text" id="newCmdName" class="form-input" placeholder="例: summarize（/は不要）">
-          </div>
-          <div class="form-row">
-            <label>説明（コマンド一覧に表示）</label>
-            <input type="text" id="newCmdDesc" class="form-input" placeholder="例: 入力した文章を3行で要約して">
-          </div>
-          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
-            <label>AIへの指示テンプレート <span style="font-weight:normal; color:var(--text-secondary);">（空欄にすると説明文を自動変換）</span></label>
-            <textarea id="newCmdTemplate" class="form-input" rows="4" style="width:100%; resize:vertical; font-family:monospace; font-size:12px;" placeholder="例:&#10;以下の文章を3行で要約してください。&#10;&#10;文章: {input}&#10;&#10;要約:"></textarea>
-          </div>
-          <div style="text-align:right;">
-            <button class="btn btn-primary" onclick="addCommand()">追加する</button>
-          </div>
+          <a href="/commands" class="btn btn-secondary" style="text-decoration:none; white-space:nowrap; margin-left:16px;">
+            コマンド管理ページへ →
+          </a>
         </div>
       </div>
-
 
       <!-- 外観設定 (Appearance) — iOS版 SettingsView と同等 -->
       <div class="settings-section">
@@ -386,7 +370,6 @@
       if (btn) btn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
       await loadSettings();
-      await loadCommands();
       await loadOllamaModels();
       await loadGlobalMemory();
       checkStatus();
@@ -662,90 +645,14 @@
       }
     }
 
-    async function loadCommands() {
-      try {
-        const data = await apiRequest('GET', '/api/commands');
-        renderCommandList(data.commands || []);
-      } catch (e) {
-        document.getElementById('commandList').innerHTML = '<div style="padding:16px; color:var(--danger);">コマンドの読み込みに失敗しました</div>';
-      }
-    }
-
-    // 最後に読み込んだコマンドを保持（言語切替時の再描画用）
-    let _lastCommands = [];
-
-    function renderCommandList(commands) {
-      _lastCommands = commands;
-      const list = document.getElementById('commandList');
-      if (commands.length === 0) {
-        list.innerHTML = `<div style="padding:16px; color:var(--text-secondary); font-size:14px;">${typeof t === 'function' ? t('settings.commands.empty') || 'No commands' : 'No commands'}</div>`;
-        return;
-      }
-      const builtinLabel = typeof t === 'function' ? t('settings.commands.builtin') : '組み込み';
-      const customLabel  = typeof t === 'function' ? t('settings.commands.custom')  : 'カスタム';
-      list.innerHTML = commands.map(cmd => `
-        <div class="command-item">
-          <div class="cmd-info">
-            <div class="cmd-name">/${cmd.name}</div>
-            <div class="cmd-desc">${cmd.description}</div>
-          </div>
-          <span class="cmd-source">${cmd.source === 'builtin' ? builtinLabel : customLabel}</span>
-          ${cmd.source === 'user' ? `
-            <div class="cmd-actions">
-              <button class="cmd-action-btn delete" onclick="deleteCommand('${cmd.name}')" title="${typeof t === 'function' ? t('action.delete') || '削除' : '削除'}">🗑</button>
-            </div>
-          ` : ''}
-        </div>
-      `).join('');
-    }
-
     // 言語変更時に動的コンテンツを再描画するコールバック
     function onLangChange() {
       // 言語セレクトの値を更新
       const langSel = document.getElementById('langSelect');
       if (langSel) langSel.value = getCurrentLang();
-      // コマンドリストを再描画
-      if (_lastCommands.length > 0) renderCommandList(_lastCommands);
       // 設定保存ボタンのテキストを更新
       const saveBtn = document.querySelector('.btn.btn-primary[onclick="saveAISettings()"]');
       if (saveBtn && typeof t === 'function') saveBtn.textContent = t('settings.ai.save');
-    }
-
-    async function addCommand() {
-      const name = document.getElementById('newCmdName').value.trim();
-      const desc = document.getElementById('newCmdDesc').value.trim();
-      const template = (document.getElementById('newCmdTemplate')?.value || '').trim();
-
-      if (!name || !desc) {
-        showToast('コマンド名と説明を入力してください', 'error');
-        return;
-      }
-
-      try {
-        await apiRequest('POST', '/api/commands', { name, description: desc, prompt_template: template || null });
-        showToast(`✅ /${name.replace('/', '')} を追加しました`);
-        document.getElementById('newCmdName').value = '';
-        document.getElementById('newCmdDesc').value = '';
-        if (document.getElementById('newCmdTemplate')) document.getElementById('newCmdTemplate').value = '';
-        await loadCommands();
-        // キャッシュを更新（チャット画面のサジェストに即反映）
-        if (typeof refreshCommandCache === 'function') await refreshCommandCache();
-      } catch (e) {
-        showToast('❌ ' + e.message, 'error');
-      }
-    }
-
-    async function deleteCommand(name) {
-      if (!confirm(`コマンド /${name} を削除しますか？`)) return;
-      try {
-        await apiRequest('DELETE', `/api/commands/${name}`);
-        showToast(`✅ /${name} を削除しました`);
-        await loadCommands();
-        // キャッシュを更新
-        if (typeof refreshCommandCache === 'function') await refreshCommandCache();
-      } catch (e) {
-        showToast('❌ ' + e.message, 'error');
-      }
     }
 
     // モデル管理

@@ -747,6 +747,10 @@ async def serve_index():
 async def serve_settings():
     return FileResponse(str(FRONTEND_DIR / "settings.html"))
 
+@app.get("/commands")
+async def serve_commands():
+    return FileResponse(str(FRONTEND_DIR / "commands.html"))
+
 # ===== 起動 =====
 
 def start_server(port: int = 18765):
