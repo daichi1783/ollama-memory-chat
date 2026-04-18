@@ -271,6 +271,29 @@
       </div>
 
 
+      <!-- 外観設定 (Appearance) — iOS版 SettingsView と同等 -->
+      <div class="settings-section">
+        <div class="settings-section-header">🎨 <span>外観 / Appearance</span></div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">テーマ</div>
+            <div class="settings-sublabel">Catppuccin Mocha（ダーク）/ Catppuccin Latte（ライト）を切り替えます</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span id="themeToggleLabel" style="font-size:13px;color:var(--text-secondary);">ライトモードに切り替え</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span id="themeToggleBtn" style="font-size:20px;cursor:pointer;" onclick="toggleTheme()">☀️</span>
+          </div>
+        </div>
+        <div class="settings-row" style="gap:8px;">
+          <button class="btn btn-secondary" onclick="setThemeExplicit('dark')" style="flex:1;">🌙 Catppuccin Mocha（ダーク）</button>
+          <button class="btn btn-secondary" onclick="setThemeExplicit('light')" style="flex:1;">☀️ Catppuccin Latte（ライト）</button>
+        </div>
+      </div>
+
       <!-- アクセシビリティ・操作設定 -->
       <div class="settings-section">
         <div class="settings-section-header">♿ <span data-i18n="settings.accessibility.section">操作設定</span></div>
@@ -349,12 +372,34 @@
       const langSel = document.getElementById('langSelect');
       if (langSel) langSel.value = getCurrentLang();
 
+      // テーマトグルの初期状態を設定
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const chk = document.getElementById('themeCheckbox');
+      if (chk) chk.checked = currentTheme === 'light';
+      const lbl = document.getElementById('themeToggleLabel');
+      if (lbl) lbl.textContent = currentTheme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
       await loadSettings();
       await loadCommands();
       await loadOllamaModels();
       await loadGlobalMemory();
       checkStatus();
     });
+
+    // テーマを明示的に指定して切り替え（Mocha/Latteボタン）
+    function setThemeExplicit(theme) {
+      localStorage.setItem('memoria-theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      const chk = document.getElementById('themeCheckbox');
+      if (chk) chk.checked = theme === 'light';
+      const lbl = document.getElementById('themeToggleLabel');
+      if (lbl) lbl.textContent = theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      showToast(theme === 'dark' ? '🌙 Catppuccin Mocha（ダーク）に切り替えました' : '☀️ Catppuccin Latte（ライト）に切り替えました');
+    }
 
     function onEngineChange() {
       const engine = document.getElementById('engineSelect').value;

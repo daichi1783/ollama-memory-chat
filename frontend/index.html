@@ -127,6 +127,14 @@
       </div>
     </div>
 
+    <!-- チャットツールバー（エクスポートボタン等） -->
+    <div class="chat-toolbar" id="chatToolbar" style="display:none;">
+      <div style="flex:1;"></div>
+      <button class="chat-toolbar-btn" onclick="exportCurrentSession()" title="この会話をテキストファイルとして書き出す">
+        📤 <span>エクスポート</span>
+      </button>
+    </div>
+
     <!-- チャットメッセージ -->
     <div id="chatMessages" class="chat-container"></div>
 

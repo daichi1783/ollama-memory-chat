@@ -28,13 +28,43 @@ let _mismatchedModelName = null;
 let _pullPollInterval = null;
 let _currentEngine = 'ollama'; // 現在のエンジン状態
 
-// ===== ダーク/ライトモード: システム外観に連動 =====
+// ===== ダーク/ライトモード: localStorage優先、なければシステム外観に連動 =====
 (function initTheme() {
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  const apply = dark => document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-  apply(mq.matches);
-  mq.addEventListener('change', e => apply(e.matches));
+  const saved = localStorage.getItem('memoria-theme'); // 'dark' | 'light' | null
+  const apply = theme => {
+    document.documentElement.setAttribute('data-theme', theme);
+    // テーマトグルボタンのアイコンを更新（ページによって存在しない場合もある）
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    const lbl = document.getElementById('themeToggleLabel');
+    if (lbl) lbl.textContent = theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  };
+  if (saved) {
+    apply(saved);
+  } else {
+    apply(mq.matches ? 'dark' : 'light');
+    mq.addEventListener('change', e => {
+      if (!localStorage.getItem('memoria-theme')) apply(e.matches ? 'dark' : 'light');
+    });
+  }
 })();
+
+// テーマを手動切り替えする関数（settings.htmlのトグルボタンから呼ぶ）
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('memoria-theme', next);
+  document.documentElement.setAttribute('data-theme', next);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+  const lbl = document.getElementById('themeToggleLabel');
+  if (lbl) lbl.textContent = next === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  // チェックボックスがあれば同期
+  const chk = document.getElementById('themeCheckbox');
+  if (chk) chk.checked = next === 'light';
+  showToast(next === 'dark' ? '🌙 ダークモード（Catppuccin Mocha）' : '☀️ ライトモード（Catppuccin Latte）');
+}
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -607,6 +637,10 @@ async function switchSession(sessionId) {
     }
   });
 
+  // チャットツールバーを表示（エクスポートボタン）
+  const toolbar = document.getElementById('chatToolbar');
+  if (toolbar) toolbar.style.display = 'flex';
+
   // チャットメッセージをクリアして、DBからメッセージを読み込む
   const chatContainer = document.getElementById('chatMessages');
   if (chatContainer) {
@@ -1050,3 +1084,58 @@ window.addEventListener('DOMContentLoaded', () => {
   // Fix⑭: スクロールボタン初期化
   initScrollToBottomBtn();
 });
+
+// ===== チャットエクスポート（iOS版 Phase4 ChatService.exportChat() と同等） =====
+async function exportCurrentSession() {
+  if (!currentSessionId) {
+    showToast('エクスポートするセッションが選択されていません', 'error');
+    return;
+  }
+  try {
+    const data = await apiRequest('GET', `/api/messages/${currentSessionId}`);
+    const messages = data.messages || [];
+    if (messages.length === 0) {
+      showToast('エクスポートするメッセージがありません', 'error');
+      return;
+    }
+
+    // セッションタイトルを取得
+    const sessionsData = await apiRequest('GET', '/api/sessions');
+    const session = (sessionsData.sessions || []).find(s => s.id === currentSessionId);
+    const title = session ? session.title : 'Memoriaチャット';
+
+    // テキスト形式に整形（iOS版と同じフォーマット）
+    const dateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const lines = [
+      `# ${title}`,
+      `エクスポート日時: ${new Date().toLocaleString('ja-JP')}`,
+      `メッセージ数: ${messages.length}件`,
+      '',
+      '---',
+      ''
+    ];
+    messages.forEach(msg => {
+      const role = msg.role === 'user' ? '👤 あなた' : '🤖 Memoria';
+      const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString('ja-JP') : '';
+      lines.push(`${role}${ts ? `（${ts}）` : ''}`);
+      lines.push(msg.content);
+      lines.push('');
+    });
+
+    const text = lines.join('\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // ファイル名: Memoria_YYYY-MM-DD_タイトル.txt
+    const safeTitle = title.replace(/[/\\:*?"<>|]/g, '_').substring(0, 40);
+    a.download = `Memoria_${dateStr.replace(/\//g, '-')}_${safeTitle}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`📤 「${title}」をエクスポートしました`);
+  } catch (e) {
+    showToast(`エクスポートエラー: ${e.message}`, 'error');
+  }
+}

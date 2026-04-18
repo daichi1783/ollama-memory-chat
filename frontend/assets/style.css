@@ -1143,3 +1143,32 @@ body { font-size: var(--base-font-size); }
   color: white;
   border-color: var(--accent);
 }
+
+/* ===== チャットツールバー（エクスポートボタン等）===== */
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+.chat-toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chat-toolbar-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
