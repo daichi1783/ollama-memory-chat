@@ -435,10 +435,11 @@ function handleCommandSuggest(value) {
 
 // Fix⑪: コマンドサジェストに使い方の例文を追加
 const COMMAND_EXAMPLES = {
-  english:   '例: /english こんにちは → "Hello"',
-  japanese:  '例: /japanese Hello → 「こんにちは」',
-  spanish:   '例: /spanish ありがとう → "Gracias"',
-  cal:       '例: /cal 2024-04-15 から今日まで',
+  english:   '例: /english 昨日、友達と映画を見ました',
+  japanese:  '例: /japanese I went to the store yesterday.',
+  spanish:   '例: /spanish 今日はいい天気ですね',
+  cal:       '例: /cal I writed a letter to my friend.',
+  grammar:   '例: /grammar She don\'t know nothing about it.',
   remember:  '例: /remember 私はエンジニアで猫が好きです',
   memory:    '最近の記憶サマリーを確認',
   clear:     '現在のセッション会話をリセット',

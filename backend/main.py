@@ -4,6 +4,8 @@ Memoria FastAPIバックエンド
 """
 import sys
 import os
+import subprocess
+import re as _re
 from pathlib import Path
 
 # バックエンドディレクトリをパスに追加
@@ -23,6 +25,26 @@ import memory_manager as mm
 import command_manager as cm
 import ollama_client as oc
 import ollama_setup as os_mgr
+
+def _get_system_language() -> str:
+    """macOSのシステム言語を取得する。ja / en / es のいずれかを返す。"""
+    try:
+        result = subprocess.run(
+            ["defaults", "read", ".GlobalPreferences", "AppleLanguages"],
+            capture_output=True, text=True, timeout=2
+        )
+        # 出力例: (\n    ja,\n    "en-JP",\n    "es-MX"\n)
+        match = _re.search(r'"?([a-z]{2})"?', result.stdout)
+        if match:
+            lang = match.group(1)
+            if lang in ("ja", "en", "es"):
+                return lang
+    except Exception:
+        pass
+    # フォールバック: 環境変数 LANG から取得
+    env_lang = os.environ.get("LANG", "ja_JP")
+    code = env_lang[:2].lower()
+    return code if code in ("ja", "en", "es") else "ja"
 
 # DBの初期化（アプリケーション起動時）
 mm.init_db()
@@ -202,6 +224,70 @@ async def chat_endpoint(req: ChatRequest):
             if result["success"]:
                 return ChatResponse(reply=f"✅ 覚えました！\n\n「{body.strip()}」\n\nこの情報はすべてのセッションで参照されます。設定画面の「記憶の管理」から確認・削除できます。", command_used="remember")
             return ChatResponse(reply=f"❌ 保存に失敗しました: {result.get('message', '')}", command_used="remember")
+
+        if command_name == "grammar":
+            if not body.strip():
+                return ChatResponse(reply="💡 使い方: `/grammar [分析したいテキスト]`\n例: `/grammar She don't know nothing about it.`", command_used="grammar")
+            lang_code = _get_system_language()
+            if lang_code == "en":
+                grammar_prompt = f"""Language analysis example:
+Text: She don't know nothing about it.
+Translation: She doesn't know anything about it.
+Recommended alternatives:
+• She doesn't know anything about it.
+• She has no knowledge of it.
+• She knows nothing about it.
+Grammar notes: "don't" is wrong with "She" — use "doesn't". "Don't know nothing" is a double negative; use "don't know anything".
+
+---
+Text: {body}
+Translation:
+Recommended alternatives:
+•
+•
+•
+Grammar notes:"""
+            elif lang_code == "es":
+                grammar_prompt = f"""Ejemplo de análisis:
+Texto: She don't know nothing about it.
+Traducción: Ella no sabe nada al respecto.
+Expresiones alternativas recomendadas:
+• She doesn't know anything about it.
+• She has no knowledge of it.
+• She knows nothing about it.
+Explicación gramatical: "don't" es incorrecto con "She" — usar "doesn't". "Don't know nothing" es doble negación; usar "don't know anything".
+
+---
+Texto: {body}
+Traducción:
+Expresiones alternativas recomendadas:
+•
+•
+•
+Explicación gramatical:"""
+            else:
+                grammar_prompt = f"""語学分析の例:
+テキスト: She don't know nothing about it.
+翻訳: 彼女はそれについて何も知りません。
+推奨される代替表現:
+• She doesn't know anything about it.
+• She has no knowledge of it.
+• She knows nothing about it.
+文法的な解説: "don't"は三人称単数の主語"She"には使えず"doesn't"が正しい。"don't know nothing"は二重否定のため"don't know anything"を使う。
+
+---
+テキスト: {body}
+翻訳:
+推奨される代替表現:
+•
+•
+•
+文法的な解説:"""
+            reply = oc.chat(
+                messages=[{"role": "user", "content": grammar_prompt}],
+                system_prompt="あなたは語学教師です。指定されたフォーマットで正確に回答してください。"
+            )
+            return ChatResponse(reply=reply, command_used="grammar")
 
         # AI呼び出しが必要なコマンドまたは通常会話
         if command_name:

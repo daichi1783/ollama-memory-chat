@@ -5,6 +5,7 @@
 
 import Foundation
 import Combine
+import SwiftUI
 import os.log
 
 /// チャットメッセージのUI表示用モデル
@@ -37,6 +38,11 @@ struct ChatMessage: Identifiable, Equatable {
 class ChatService: ObservableObject {
     @Published var messages: [ChatMessage] = []
     @Published var isGenerating = false
+    /// ContentViewのNavigationStackを駆動するためのシグナル
+    /// 値がセットされると ContentView がパスに追加してナビゲーションする
+    @Published var pendingNavigationId: Int64? = nil
+    /// セッション一覧でキーワード検索して遷移した際の検索ワード（ChatViewでスクロール・ハイライト用）
+    @Published var highlightKeyword: String? = nil
     @Published var currentSessionId: Int64? {
         didSet {
             // セッション切り替え時に下書きを復元
@@ -45,6 +51,8 @@ class ChatService: ObservableObject {
     }
     @Published var sessions: [SessionPreview] = []
     @Published var messageCountWarning: String?
+    /// APIキー未設定でクラウドモデルを使おうとした場合に設定画面をポップアップするためのプロバイダー
+    @Published var needsAPIKeySetupFor: APIProvider? = nil
 
     /// 入力中の下書きテキスト（UserDefaultsで永続化、アプリ終了しても残る）
     @Published var draftText: String = "" {
@@ -72,22 +80,39 @@ class ChatService: ObservableObject {
     // 組み込みコマンド一覧（ユーザー定義と区別）
     private let builtinCommands: Set<String> = [
         "help", "clear", "remember", "memory",
-        "english", "japanese", "spanish", "cal",
+        "english", "japanese", "spanish", "cal", "grammar",
         "commands", "addcommand", "deletecommand"
     ]
 
     // MARK: - Session Management
 
-    /// 新しいセッションを作成
+    /// 新しいセッションを作成し、ContentViewへナビゲーションシグナルを送る
     func createNewSession() {
+        // 古いセッションの生成が新セッションに漏れ込まないよう isGenerating を確実にリセット
+        isGenerating = false
         do {
             let session = try db.createSession()
             currentSessionId = session.id
             messages = []
             refreshSessions()
+            // pendingNavigationId の変更を次のランループに遅延させる
+            // → refreshSessions() 等の @Published 変更バッチが SwiftUI に処理された後、
+            //   独立したサイクルで onChange が確実に発火するようにする
+            if let id = session.id {
+                Task { @MainActor in
+                    self.pendingNavigationId = id
+                }
+            }
         } catch {
             logger.error("Failed to create session: \(error.localizedDescription)")
         }
+    }
+
+    /// セッションを選択してナビゲーション（ButtonタップからのUI起点）
+    /// loadSession + pendingNavigationId セットを一括で行う
+    func selectSession(id: Int64) {
+        loadSession(id: id)
+        pendingNavigationId = id
     }
 
     /// 既存セッションを読み込む
@@ -279,6 +304,14 @@ class ChatService: ObservableObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        // ③ クラウドモデルでAPIキー未設定の場合、送信前に設定画面を誘導
+        if llm.currentModelType.isCloud,
+           let provider = llm.currentModelType.cloudProvider,
+           !KeychainService.shared.hasAPIKey(for: provider) {
+            needsAPIKeySetupFor = provider
+            return
+        }
+
         // セッションがなければ作成
         if currentSessionId == nil {
             createNewSession()
@@ -326,7 +359,9 @@ class ChatService: ObservableObject {
     }
 
     /// AI応答を生成（ストリーミング）
-    private func generateResponse(for input: String, sessionId: Int64) async {
+    /// - overrideSystemPrompt: nilの場合はbaseSystemPrompt+記憶を使用。指定した場合はそのまま使用（記憶注入なし）
+    /// - initialContent: ストリーミング開始前にバブルに表示するプレフィックス文字列（例: 分析対象テキストの表示）
+    private func generateResponse(for input: String, sessionId: Int64, overrideSystemPrompt: String? = nil, initialContent: String = "") async {
         isGenerating = true
 
         // ★ defer で確実に isGenerating = false にする（例外・早期リターン時も安全）
@@ -334,17 +369,21 @@ class ChatService: ObservableObject {
 
         // システムプロンプトに記憶を注入
         let systemPrompt: String
-        do {
-            systemPrompt = try db.buildSystemPrompt(
-                basePrompt: baseSystemPrompt,
-                sessionId: sessionId
-            )
-        } catch {
-            systemPrompt = baseSystemPrompt
+        if let override = overrideSystemPrompt {
+            systemPrompt = override
+        } else {
+            do {
+                systemPrompt = try db.buildSystemPrompt(
+                    basePrompt: baseSystemPrompt,
+                    sessionId: sessionId
+                )
+            } catch {
+                systemPrompt = baseSystemPrompt
+            }
         }
 
-        // ストリーミング用の仮メッセージを追加
-        let placeholderMessage = ChatMessage(role: "assistant", content: "", isStreaming: true)
+        // ストリーミング用の仮メッセージを追加（initialContentがあれば先頭に表示）
+        let placeholderMessage = ChatMessage(role: "assistant", content: initialContent, isStreaming: true)
         messages.append(placeholderMessage)
         let streamIndex = messages.count - 1
 
@@ -491,16 +530,37 @@ class ChatService: ObservableObject {
         await handleUserDefinedCommand(command, body: body, rawInput: input, sessionId: sessionId)
     }
 
+    /// ユーザーメッセージをDBに保存してUIにも追加するヘルパー
+    private func persistAndAppendUser(_ content: String, sessionId: Int64) {
+        do {
+            _ = try db.addMessage(role: "user", content: content, sessionId: sessionId)
+        } catch {
+            logger.error("Failed to persist user message: \(error.localizedDescription)")
+        }
+        messages.append(ChatMessage(role: "user", content: content))
+    }
+
+    /// アシスタントメッセージをDBに保存してUIにも追加するヘルパー
+    private func persistAndAppendAssistant(_ content: String, sessionId: Int64) {
+        do {
+            _ = try db.addMessage(role: "assistant", content: content, sessionId: sessionId)
+        } catch {
+            logger.error("Failed to persist assistant message: \(error.localizedDescription)")
+        }
+        messages.append(ChatMessage(role: "assistant", content: content))
+    }
+
     /// 組み込みコマンドの処理
     private func handleBuiltinCommand(_ command: String, body: String, rawInput: String, sessionId: Int64) async {
         switch command {
         case "help":
             var helpText = """
             利用可能なコマンド:
-            /english [テキスト] -- 日->英翻訳
-            /japanese [テキスト] -- 英->日翻訳
-            /spanish [テキスト] -- 日->西翻訳
-            /cal [テキスト] -- 文法・表現チェック
+            /english [テキスト] -- 英語ネイティブの英語に変換
+            /japanese [テキスト] -- 日本語ネイティブの日本語に変換
+            /spanish [テキスト] -- スペイン語ネイティブのスペイン語に変換
+            /cal [テキスト] -- 言語を自動判定して校正（日本語・英語・スペイン語）
+            /grammar [テキスト] -- 翻訳・代替表現・文法解説を表示
             /remember [内容] -- グローバルメモリに保存
             /memory -- 記憶サマリー表示
             /clear -- セッションリセット
@@ -521,71 +581,150 @@ class ChatService: ObservableObject {
             } catch {
                 logger.error("Failed to load user commands for help: \(error.localizedDescription)")
             }
-            messages.append(ChatMessage(role: "assistant", content: helpText))
+            persistAndAppendAssistant(helpText, sessionId: sessionId)
 
         case "clear":
             createNewSession()
+            // clear は新セッション作成のため保存不要（新セッションIDが変わる）
             messages.append(ChatMessage(role: "assistant", content: "新しい会話を始めました。"))
 
         case "remember":
             guard !body.isEmpty else {
-                messages.append(ChatMessage(role: "assistant", content: "記憶する内容を入力してください。\n例: /remember 私の名前はDaichiです"))
+                persistAndAppendAssistant("記憶する内容を入力してください。\n例: /remember 私の名前はDaichiです", sessionId: sessionId)
                 return
             }
             do {
                 try db.addGlobalMemory(content: body)
-                messages.append(ChatMessage(role: "assistant", content: "記憶しました: \(body)"))
+                persistAndAppendUser(rawInput, sessionId: sessionId)
+                persistAndAppendAssistant("記憶しました: \(body)", sessionId: sessionId)
             } catch {
-                messages.append(ChatMessage(role: "assistant", content: "記憶の保存に失敗しました。"))
+                persistAndAppendAssistant("記憶の保存に失敗しました。", sessionId: sessionId)
             }
 
         case "memory":
             do {
                 let memories = try db.getAllGlobalMemories()
                 if memories.isEmpty {
-                    messages.append(ChatMessage(role: "assistant", content: "グローバルメモリは空です。\n/remember で記憶を追加できます。"))
+                    persistAndAppendAssistant("グローバルメモリは空です。\n/remember で記憶を追加できます。", sessionId: sessionId)
                 } else {
                     let list = memories.enumerated().map { "\($0.offset + 1). \($0.element.content)" }.joined(separator: "\n")
-                    messages.append(ChatMessage(role: "assistant", content: "グローバルメモリ:\n\(list)"))
+                    persistAndAppendAssistant("グローバルメモリ:\n\(list)", sessionId: sessionId)
                 }
             } catch {
-                messages.append(ChatMessage(role: "assistant", content: "メモリの読み込みに失敗しました。"))
+                persistAndAppendAssistant("メモリの読み込みに失敗しました。", sessionId: sessionId)
             }
 
         case "english":
-            let prompt = "以下のテキストを英語に翻訳してください。翻訳のみを出力してください。\n\n対象テキスト: \(body)"
-            messages.append(ChatMessage(role: "user", content: rawInput))
+            let prompt = "You are a native English speaker. Rewrite the following text exactly as a native English speaker would write it — not as a translation. Use natural English idioms, phrasing, and rhythm. Output only the rewritten text.\n\nText: \(body)"
+            persistAndAppendUser(rawInput, sessionId: sessionId)
             await generateResponse(for: prompt, sessionId: sessionId)
 
         case "japanese":
-            let prompt = "以下のテキストを日本語に翻訳してください。翻訳のみを出力してください。\n\n対象テキスト: \(body)"
-            messages.append(ChatMessage(role: "user", content: rawInput))
+            let prompt = "あなたは日本語のネイティブスピーカーです。以下のテキストを、日本語ネイティブが最初から書いたかのように自然な日本語で書き直してください。翻訳調にならず、日本語として完全に自然な表現・言い回しを使ってください。書き直したテキストのみを出力してください。\n\nテキスト: \(body)"
+            persistAndAppendUser(rawInput, sessionId: sessionId)
             await generateResponse(for: prompt, sessionId: sessionId)
 
         case "spanish":
-            let prompt = "以下のテキストをスペイン語に翻訳してください。翻訳のみを出力してください。\n\n対象テキスト: \(body)"
-            messages.append(ChatMessage(role: "user", content: rawInput))
+            let prompt = "Eres un hablante nativo de español. Reescribe el siguiente texto como lo escribiría un nativo desde cero, no como una traducción. Usa expresiones, giros y ritmo naturales del español. Devuelve solo el texto reescrito.\n\nTexto: \(body)"
+            persistAndAppendUser(rawInput, sessionId: sessionId)
             await generateResponse(for: prompt, sessionId: sessionId)
 
         case "cal":
-            let prompt = "以下のテキストの文法と表現をチェックし、修正案を提示してください。\n\n対象テキスト: \(body)"
-            messages.append(ChatMessage(role: "user", content: rawInput))
+            let prompt = "以下のテキストの言語（日本語・英語・スペイン語）を自動判定し、そのネイティブスピーカーとして校正してください。誤字・脱字・文法ミス・不自然な表現を修正し、修正箇所とその理由を入力と同じ言語で説明してください。\n\nテキスト: \(body)"
+            persistAndAppendUser(rawInput, sessionId: sessionId)
             await generateResponse(for: prompt, sessionId: sessionId)
+
+        case "grammar":
+            guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                persistAndAppendAssistant("💡 使い方: /grammar [分析したいテキスト]\n例: /grammar She don't know nothing about it.", sessionId: sessionId)
+                return
+            }
+            let appLang = LocalizationService.shared.currentLanguage
+            let grammarPrompt: String
+            switch appLang {
+            case .japanese:
+                grammarPrompt = """
+                語学分析の例:
+                テキスト: She don't know nothing about it.
+                翻訳: 彼女はそれについて何も知りません。
+                推奨される代替表現:
+                • She doesn't know anything about it.
+                • She has no knowledge of it.
+                • She knows nothing about it.
+                文法的な解説: "don't"は三人称単数の主語"She"には使えず"doesn't"が正しい。"don't know nothing"は二重否定のため"don't know anything"を使う。
+
+                ---
+                テキスト: \(body)
+                翻訳:
+                推奨される代替表現:
+                •
+                •
+                •
+                文法的な解説:
+                """
+            case .english:
+                grammarPrompt = """
+                Language analysis example:
+                Text: She don't know nothing about it.
+                Translation: She doesn't know anything about it.
+                Recommended alternatives:
+                • She doesn't know anything about it.
+                • She has no knowledge of it.
+                • She knows nothing about it.
+                Grammar notes: "don't" is wrong with "She" — use "doesn't". "Don't know nothing" is a double negative; use "don't know anything".
+
+                ---
+                Text: \(body)
+                Translation:
+                Recommended alternatives:
+                •
+                •
+                •
+                Grammar notes:
+                """
+            case .spanish:
+                grammarPrompt = """
+                Ejemplo de análisis:
+                Texto: She don't know nothing about it.
+                Traducción: Ella no sabe nada al respecto.
+                Expresiones alternativas recomendadas:
+                • She doesn't know anything about it.
+                • She has no knowledge of it.
+                • She knows nothing about it.
+                Explicación gramatical: "don't" es incorrecto con "She" — usar "doesn't". "Don't know nothing" es doble negación; usar "don't know anything".
+
+                ---
+                Texto: \(body)
+                Traducción:
+                Expresiones alternativas recomendadas:
+                •
+                •
+                •
+                Explicación gramatical:
+                """
+            }
+            // grammar専用システムプロンプト:
+            // デフォルトの「簡潔に」指示を除外し、全セクション出力を強制する
+            let grammarSystemPrompt = "あなたは語学教師です。与えられたテンプレートの空欄をすべて埋めて出力してください。省略せずにすべてのセクションを完成させてください。"
+            // レスポンスバブルの先頭に入力テキストを表示
+            let textHeader = "📝 \(body)\n\n"
+            persistAndAppendUser(rawInput, sessionId: sessionId)
+            await generateResponse(for: grammarPrompt, sessionId: sessionId, overrideSystemPrompt: grammarSystemPrompt, initialContent: textHeader)
 
         case "commands":
             do {
                 let userCmds = try db.getAllUserCommands()
                 if userCmds.isEmpty {
-                    messages.append(ChatMessage(role: "assistant", content: "ユーザー定義コマンドはまだありません。\n/addcommand で追加できます。"))
+                    persistAndAppendAssistant("ユーザー定義コマンドはまだありません。\n/addcommand で追加できます。", sessionId: sessionId)
                 } else {
                     var text = "ユーザー定義コマンド:\n"
                     for cmd in userCmds {
                         text += "\n/\(cmd.name) -- \(cmd.commandDescription)\n  テンプレート: \(cmd.promptTemplate.prefix(60))..."
                     }
-                    messages.append(ChatMessage(role: "assistant", content: text))
+                    persistAndAppendAssistant(text, sessionId: sessionId)
                 }
             } catch {
-                messages.append(ChatMessage(role: "assistant", content: "コマンド一覧の取得に失敗しました。"))
+                persistAndAppendAssistant("コマンド一覧の取得に失敗しました。", sessionId: sessionId)
             }
 
         case "addcommand":
@@ -603,22 +742,43 @@ class ChatService: ObservableObject {
     private func handleUserDefinedCommand(_ command: String, body: String, rawInput: String, sessionId: Int64) async {
         do {
             guard let userCommand = try db.getUserCommand(name: command) else {
-                messages.append(ChatMessage(role: "assistant", content: "不明なコマンド: /\(command)\n/help でコマンド一覧を確認できます。"))
+                persistAndAppendAssistant("不明なコマンド: /\(command)\n/help でコマンド一覧を確認できます。", sessionId: sessionId)
+                return
+            }
+
+            let template = userCommand.promptTemplate
+
+            // {input}/{text} プレースホルダーを含むテンプレートで body が空の場合は案内を表示
+            let hasInputPlaceholder = template.contains("{input}") ||
+                                      template.contains("{text}") ||
+                                      template.contains("{{input}}") ||
+                                      template.contains("{{text}}")
+
+            if hasInputPlaceholder && body.isEmpty {
+                let hint = """
+                **「/\(command)」の使い方**
+                テキストをコマンドの後ろに続けて入力してください。
+
+                例: `/\(command) ここに対象テキストを入力`
+
+                テンプレート: \(template.prefix(80))\(template.count > 80 ? "…" : "")
+                """
+                messages.append(ChatMessage(role: "assistant", content: hint))
                 return
             }
 
             // テンプレート展開: {input} をユーザー入力に置換
-            let expandedPrompt = userCommand.promptTemplate
+            let expandedPrompt = template
                 .replacingOccurrences(of: "{input}", with: body)
                 .replacingOccurrences(of: "{text}", with: body)
                 .replacingOccurrences(of: "{{input}}", with: body)
                 .replacingOccurrences(of: "{{text}}", with: body)
 
-            messages.append(ChatMessage(role: "user", content: rawInput))
+            persistAndAppendUser(rawInput, sessionId: sessionId)
             await generateResponse(for: expandedPrompt, sessionId: sessionId)
         } catch {
             logger.error("User command execution failed: \(error.localizedDescription)")
-            messages.append(ChatMessage(role: "assistant", content: "コマンドの実行に失敗しました: \(error.localizedDescription)"))
+            persistAndAppendAssistant("コマンドの実行に失敗しました: \(error.localizedDescription)", sessionId: sessionId)
         }
     }
 

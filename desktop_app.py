@@ -6,6 +6,8 @@ PyInstaller .appバンドルにも対応
 import sys
 import os
 import shutil
+import signal
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -37,6 +39,25 @@ if not user_config.exists() and default_config.exists():
 
 # バックエンドをパスに追加
 sys.path.insert(0, str(BUNDLE_DIR / "backend"))
+
+
+def free_port(port: int) -> None:
+    """指定ポートを使用しているすべてのプロセスを終了する（Ankiなど他アプリとの競合を防止）"""
+    try:
+        result = subprocess.run(
+            ['lsof', '-ti', f':{port}'],
+            capture_output=True, text=True, timeout=3
+        )
+        pids = [p.strip() for p in result.stdout.strip().split('\n') if p.strip()]
+        for pid in pids:
+            try:
+                os.kill(int(pid), signal.SIGTERM)
+            except (ProcessLookupError, PermissionError, ValueError):
+                pass
+        if pids:
+            time.sleep(0.5)  # プロセス終了を待機
+    except Exception:
+        pass
 
 
 def start_backend():
@@ -88,6 +109,9 @@ def main():
     app_name = config.get("app", {}).get("name", "Memoria")
 
     print(f"✨ {app_name} を起動しています...")
+
+    # ポートを事前に解放（旧プロセスや他アプリとの競合を防止）
+    free_port(port)
 
     # バックエンドをバックグラウンドで起動
     server_thread = threading.Thread(target=start_backend, daemon=True)

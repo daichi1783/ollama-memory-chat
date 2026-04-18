@@ -16,23 +16,28 @@ CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 _HARDCODED_COMMANDS = [
     {
         "name": "english",
-        "description": "入力した日本語をネイティブな自然英語に翻訳します",
-        "prompt": "以下のテキストを、ネイティブスピーカーが書くような自然な英語に翻訳してください。直訳ではなく、英語として自然な表現を使ってください。翻訳結果のみを出力してください。\n\nテキスト: {input}"
+        "description": "英語ネイティブが書くような自然な英語に変換します",
+        "prompt": "You are a native English speaker. Rewrite the following text exactly as a native English speaker would write it — not as a translation. Use natural English idioms, phrasing, and rhythm. Output only the rewritten text.\n\nText: {input}"
     },
     {
         "name": "japanese",
-        "description": "入力した英語を自然な日本語に翻訳します",
-        "prompt": "以下のテキストを、自然な日本語に翻訳してください。直訳ではなく、日本語として自然な表現を使ってください。翻訳結果のみを出力してください。\n\nテキスト: {input}"
+        "description": "日本語ネイティブが書くような自然な日本語に変換します",
+        "prompt": "あなたは日本語のネイティブスピーカーです。以下のテキストを、日本語ネイティブが最初から書いたかのように自然な日本語で書き直してください。翻訳調にならず、日本語として完全に自然な表現・言い回しを使ってください。書き直したテキストのみを出力してください。\n\nテキスト: {input}"
     },
     {
         "name": "spanish",
-        "description": "入力したテキストを自然なスペイン語に翻訳します",
-        "prompt": "Translate the following text into natural, fluent Spanish. Use expressions that sound native, not literal translations. Output only the translation.\n\nText: {input}"
+        "description": "スペイン語ネイティブが書くような自然なスペイン語に変換します",
+        "prompt": "Eres un hablante nativo de español. Reescribe el siguiente texto como lo escribiría un nativo desde cero, no como una traducción. Usa expresiones, giros y ritmo naturales del español. Devuelve solo el texto reescrito.\n\nTexto: {input}"
     },
     {
         "name": "cal",
-        "description": "文章の文法・表現を校正します（日本語・英語対応）",
-        "prompt": "以下の文章を校正してください。誤字・脱字・文法ミス・不自然な表現があれば修正し、修正箇所と理由を説明してください。\n\nテキスト: {input}"
+        "description": "入力された言語（日本語・英語・スペイン語）を自動判定して校正します",
+        "prompt": "以下のテキストの言語（日本語・英語・スペイン語）を自動判定し、そのネイティブスピーカーとして校正してください。誤字・脱字・文法ミス・不自然な表現を修正し、修正箇所とその理由を入力と同じ言語で説明してください。\n\nテキスト: {input}"
+    },
+    {
+        "name": "grammar",
+        "description": "テキストの翻訳・代替表現・文法解説をシステム言語で表示します",
+        "prompt": ""  # main.pyで動的処理（システム言語を自動取得）
     },
     {
         "name": "memory",
