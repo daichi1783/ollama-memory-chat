@@ -6,6 +6,7 @@ import SwiftUI
 
 struct APIKeySetupView: View {
     @EnvironmentObject var theme: ThemeManager
+    @EnvironmentObject var loc: LocalizationService
     @Environment(\.dismiss) private var dismiss
 
     let provider: APIProvider
@@ -51,25 +52,26 @@ struct APIKeySetupView: View {
                 .padding(.bottom, 40)
             }
             .background(theme.colors.base)
-            .navigationTitle("\(provider.displayName) APIキー設定")
+            // ⑨ ローカライズ対応: "OpenAI API Key Setup" 等の形式
+            .navigationTitle("\(provider.displayName) \(loc["api_key_setup_nav_title"])")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(theme.colors.surface0, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("閉じる") { dismiss() }
+                    Button(loc["done"]) { dismiss() }
                         .foregroundColor(theme.colors.blue)
                 }
             }
-            .alert("APIキーを削除しますか？", isPresented: $showDeleteAlert) {
-                Button("削除", role: .destructive) {
+            .alert(loc["delete_memory_title"], isPresented: $showDeleteAlert) {
+                Button(loc["delete"], role: .destructive) {
                     KeychainService.shared.deleteAPIKey(for: provider)
                     apiKeyInput = ""
                     saveResult = .deleted
                 }
-                Button("キャンセル", role: .cancel) {}
+                Button(loc["cancel"], role: .cancel) {}
             } message: {
-                Text("\(provider.displayName) のAPIキーをiPhoneから完全に削除します。")
+                Text("\(provider.displayName) \(loc["api_key_setup_nav_title"])")
             }
         }
         .preferredColorScheme(theme.preferredColorScheme)
@@ -92,7 +94,7 @@ struct APIKeySetupView: View {
                 Text(provider.displayName)
                     .font(.title2.bold())
                     .foregroundColor(theme.colors.text)
-                Text("APIキーはiPhone内のKeychainに暗号化して保存されます")
+                Text(loc["api_key_keychain_note"])
                     .font(.caption)
                     .foregroundColor(theme.colors.subtext0)
                     .multilineTextAlignment(.center)
@@ -108,7 +110,7 @@ struct APIKeySetupView: View {
             Image(systemName: "checkmark.seal.fill")
                 .foregroundColor(theme.colors.green)
             VStack(alignment: .leading, spacing: 2) {
-                Text("設定済み")
+                Text(loc["api_key_already_set"])
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(theme.colors.green)
                 Text(masked)
@@ -400,4 +402,5 @@ struct APIKeySetupView: View {
 #Preview {
     APIKeySetupView(provider: .gemini)
         .environmentObject(ThemeManager.shared)
+        .environmentObject(LocalizationService.shared)
 }

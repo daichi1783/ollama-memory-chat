@@ -6,6 +6,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @EnvironmentObject var theme: ThemeManager
+    @EnvironmentObject var loc: LocalizationService
     let onAccept: () -> Void
 
     @State private var currentPage: Int = 0
@@ -83,11 +84,11 @@ struct OnboardingView: View {
             }
 
             VStack(spacing: 12) {
-                Text("Memoriaへようこそ")
+                Text(loc["onboarding_welcome"])
                     .font(.title.bold())
                     .foregroundColor(theme.colors.text)
 
-                Text("あなたとの会話を記憶する\nプライベートAIアシスタント")
+                Text(loc["onboarding_subtitle"])
                     .font(.body)
                     .foregroundColor(theme.colors.subtext0)
                     .multilineTextAlignment(.center)
@@ -96,9 +97,9 @@ struct OnboardingView: View {
 
             // バッジ
             HStack(spacing: 12) {
-                onboardingBadge(icon: "lock.shield.fill", text: "完全オフライン", color: theme.colors.green)
-                onboardingBadge(icon: "brain", text: "記憶機能", color: theme.colors.mauve)
-                onboardingBadge(icon: "mic.fill", text: "音声入力", color: theme.colors.blue)
+                onboardingBadge(icon: "lock.shield.fill", text: loc["badge_offline"], color: theme.colors.green)
+                onboardingBadge(icon: "brain", text: loc["badge_memory"], color: theme.colors.mauve)
+                onboardingBadge(icon: "mic.fill", text: loc["badge_voice"], color: theme.colors.blue)
             }
 
             Spacer()
@@ -112,7 +113,7 @@ struct OnboardingView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            Text("Memoriaの特徴")
+            Text(loc["features_title"])
                 .font(.title2.bold())
                 .foregroundColor(theme.colors.text)
 
@@ -120,20 +121,20 @@ struct OnboardingView: View {
                 featureRow(
                     icon: "iphone",
                     iconColor: theme.colors.blue,
-                    title: "iPhoneの中だけで動作",
-                    description: "AIの処理はすべてiPhone内で完結。データがデバイスの外に出ることはありません。"
+                    title: loc["onb_feature1_title"],
+                    description: loc["onb_feature1_desc"]
                 )
                 featureRow(
                     icon: "bubble.left.and.text.bubble.right.fill",
                     iconColor: theme.colors.sapphire,
-                    title: "会話を記憶する",
-                    description: "セッションをまたいで会話内容を要約・記憶。文脈を持ったパーソナルアシスタントです。"
+                    title: loc["onb_feature2_title"],
+                    description: loc["onb_feature2_desc"]
                 )
                 featureRow(
                     icon: "cpu",
                     iconColor: theme.colors.teal,
-                    title: "Powered by Gemma (Google DeepMind)",
-                    description: "最新のオープンソースLLMを使用。iPhone 16以降ではより高性能なGemma 4も利用可能です。"
+                    title: loc["onb_feature3_title"],
+                    description: loc["onb_feature3_desc"]
                 )
             }
             .padding(.horizontal, 8)
@@ -154,23 +155,23 @@ struct OnboardingView: View {
                     .font(.system(size: 36))
                     .foregroundColor(theme.colors.yellow)
 
-                Text("ご利用前にお読みください")
+                Text(loc["onb_disclaimer_title"])
                     .font(.title2.bold())
                     .foregroundColor(theme.colors.text)
 
                 disclaimerBox(
-                    title: "⚠️ AIの回答精度について",
-                    body: "Memoriaが生成する回答は、AIモデルが推測したものです。内容の正確性・完全性・適時性を一切保証しません。重要な判断（医療・法律・財務等）には専門家にご相談ください。AIの回答を参考にした結果生じたいかなる損害についても、開発者は責任を負いません。"
+                    title: loc["onb_disclaimer1_title"],
+                    body: loc["onb_disclaimer1_body"]
                 )
 
                 disclaimerBox(
-                    title: "🤖 使用AIモデルについて",
-                    body: "本アプリはGoogle DeepMindが開発したGemma（オープンモデル）をローカル実行します。モデルはHuggingFaceよりダウンロードされます。利用にはGoogle Gemma利用規約への同意が必要です。"
+                    title: loc["onb_disclaimer2_title"],
+                    body: loc["onb_disclaimer2_body"]
                 )
 
                 disclaimerBox(
-                    title: "🔒 プライバシーについて",
-                    body: "会話データはiPhone内にのみ保存されます。マイクは音声入力にのみ使用し、録音データは一切保存・送信しません。"
+                    title: loc["onb_disclaimer3_title"],
+                    body: loc["onb_disclaimer3_body"]
                 )
 
                 // 同意チェックボックス
@@ -186,7 +187,7 @@ struct OnboardingView: View {
                             .font(.system(size: 22))
                             .foregroundColor(agreementChecked ? theme.colors.blue : theme.colors.overlay0)
 
-                        Text("上記の免責事項を読み、理解した上で自己責任においてMemoriaを利用することに同意します。")
+                        Text(loc["onb_agreement"])
                             .font(.footnote)
                             .foregroundColor(theme.colors.subtext1)
                             .multilineTextAlignment(.leading)
@@ -224,7 +225,7 @@ struct OnboardingView: View {
                         currentPage += 1
                     }
                 } label: {
-                    Text("次へ")
+                    Text(loc["next"])
                         .font(.body.weight(.semibold))
                         .foregroundColor(theme.colors.base)
                         .frame(maxWidth: .infinity)
@@ -239,7 +240,7 @@ struct OnboardingView: View {
                     Button {
                         withAnimation { currentPage -= 1 }
                     } label: {
-                        Text("戻る")
+                        Text(loc["back"])
                             .font(.body)
                             .foregroundColor(theme.colors.subtext0)
                     }
@@ -253,7 +254,7 @@ struct OnboardingView: View {
                 } label: {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                        Text("同意してMemoriaを始める")
+                        Text(loc["onb_agree_btn"])
                             .font(.body.weight(.semibold))
                     }
                     .foregroundColor(agreementChecked ? theme.colors.base : theme.colors.subtext0)
@@ -272,7 +273,7 @@ struct OnboardingView: View {
                 Button {
                     withAnimation { currentPage -= 1 }
                 } label: {
-                    Text("戻る")
+                    Text(loc["back"])
                         .font(.body)
                         .foregroundColor(theme.colors.subtext0)
                 }
@@ -353,4 +354,5 @@ struct OnboardingView: View {
 #Preview {
     OnboardingView(onAccept: {})
         .environmentObject(ThemeManager.shared)
+        .environmentObject(LocalizationService.shared)
 }

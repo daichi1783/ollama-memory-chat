@@ -3,6 +3,8 @@
 // Phase 6: OpenAI / Claude (Anthropic) / Gemini (Google) SSEストリーミング対応
 
 import Foundation
+import Combine
+import Network
 import os.log
 
 // MARK: - Cloud LLM Error
@@ -40,9 +42,31 @@ struct CloudMessage {
 // MARK: - CloudLLMService
 
 @MainActor
-final class CloudLLMService {
+final class CloudLLMService: ObservableObject {
     static let shared = CloudLLMService()
-    private init() {}
+
+    // MARK: - Network Monitoring
+
+    private let pathMonitor = NWPathMonitor()
+    /// ネットワーク接続状態（ChatViewのオフラインバナー表示に使用）
+    @Published private(set) var isNetworkAvailable = true
+
+    private init() {
+        // NWPathMonitor でネットワーク状態を常時監視
+        // pathUpdateHandler はバックグラウンドスレッドで呼ばれるため、
+        // Task { @MainActor in ... } でメインスレッドに戻してから更新する
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let connected = path.status == .satisfied
+            Task { @MainActor [weak self] in
+                self?.isNetworkAvailable = connected
+            }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "com.memoria.NetworkMonitor"))
+    }
+
+    deinit {
+        pathMonitor.cancel()
+    }
 
     private let logger = Logger(subsystem: "com.memoria.app", category: "CloudLLM")
     private var currentTask: Task<Void, Never>?
@@ -64,6 +88,11 @@ final class CloudLLMService {
         userPrompt: String,
         onToken: @escaping @Sendable (String) -> Void
     ) async throws -> String {
+        // ネットワーク接続確認（オフライン時は即座にエラー）
+        guard isNetworkAvailable else {
+            throw CloudLLMError.networkUnavailable
+        }
+
         guard let apiKey = KeychainService.shared.getAPIKey(for: provider) else {
             throw CloudLLMError.noAPIKey(provider)
         }
@@ -167,6 +196,14 @@ final class CloudLLMService {
             "model": modelID,
             "system": systemPrompt,
             "messages": messages,
+            // Web検索ツール: AIが必要と判断した場合のみAnthropicサーバー側で自動実行
+            "tools": [
+                [
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 5
+                ] as [String: Any]
+            ],
             "stream": true,
             "max_tokens": 4096
         ]
@@ -232,7 +269,9 @@ final class CloudLLMService {
             "generationConfig": [
                 "maxOutputTokens": 4096,
                 "temperature": 0.7
-            ]
+            ],
+            // Google Search グラウンディング: AIが必要と判断した場合のみ自動でWeb検索を実行
+            "tools": [["googleSearch": [:]] as [String: Any]]
         ]
 
         let urlString = "https://generativelanguage.googleapis.com/v1beta/models/\(modelID):streamGenerateContent?alt=sse&key=\(apiKey)"

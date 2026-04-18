@@ -48,6 +48,7 @@ struct MemoriaApp: App {
                         }
                     }
                     .environmentObject(themeManager)
+                    .environmentObject(localization)
                     .transition(.opacity)
                     .ignoresSafeArea()
                     .zIndex(10)

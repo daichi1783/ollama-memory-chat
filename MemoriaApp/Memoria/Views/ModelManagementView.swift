@@ -9,6 +9,7 @@ import Network
 struct ModelManagementView: View {
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var llmService: LLMService
+    @EnvironmentObject var loc: LocalizationService
 
     @State private var isSwitching = false
     @State private var switchTargetModel: ModelType?
@@ -36,11 +37,11 @@ struct ModelManagementView: View {
                     }
 
                     // ローカルモデルセクション
-                    sectionHeader(title: "ローカルモデル", icon: "iphone", subtitle: "オフライン動作・プライバシー保護")
+                    sectionHeader(title: loc["local_models"], icon: "iphone", subtitle: loc["local_models_sub"])
                     localModelsSection
 
                     // クラウドモデルセクション
-                    sectionHeader(title: "クラウドモデル", icon: "cloud", subtitle: "高性能・要インターネット接続")
+                    sectionHeader(title: loc["cloud_models"], icon: "cloud", subtitle: loc["cloud_models_sub"])
                     cloudModelsSection
 
                     // 下部情報
@@ -50,23 +51,26 @@ struct ModelManagementView: View {
                 .padding(.vertical, 16)
             }
             .background(theme.colors.base.ignoresSafeArea())
-            .navigationTitle("モデル管理")
+            .navigationTitle(loc["model_mgmt_title"])
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(theme.colors.mantle, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .confirmationDialog(
-                "モデルをアンロードしますか？",
+                loc["unload_confirm_title"],
                 isPresented: $showUnloadConfirm,
                 titleVisibility: .visible
             ) {
-                Button("アンロード", role: .destructive) {
+                Button(loc["unload_confirm_action"], role: .destructive) {
                     llmService.unloadModel()
                 }
-                Button("キャンセル", role: .cancel) {}
+                Button(loc["cancel"], role: .cancel) {}
+            } message: {
+                Text(loc["unload_confirm_msg"])
             }
             .sheet(item: $apiKeySetupProvider) { provider in
                 APIKeySetupView(provider: provider)
                     .environmentObject(theme)
+                    .environmentObject(loc)
             }
             .task {
                 await monitorNetworkPath()
@@ -135,7 +139,7 @@ struct ModelManagementView: View {
 
     private var currentModelInfo: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("現在のモデル")
+            Text(loc["current_model_header"])
                 .font(.caption)
                 .foregroundColor(theme.colors.subtext1)
 
@@ -147,7 +151,7 @@ struct ModelManagementView: View {
                         .foregroundColor(theme.colors.text)
                         .lineLimit(1)
                 }
-                statusPill(text: "使用中", color: theme.colors.green, icon: "checkmark.circle.fill")
+                statusPill(text: loc["in_use"], color: theme.colors.green, icon: "checkmark.circle.fill")
             case .downloading(let progress):
                 Text(llmService.currentModelType.displayName)
                     .font(.headline).foregroundColor(theme.colors.text)
@@ -155,13 +159,13 @@ struct ModelManagementView: View {
             case .loading:
                 Text(llmService.currentModelType.displayName)
                     .font(.headline).foregroundColor(theme.colors.text)
-                statusPill(text: "読み込み中...", color: theme.colors.yellow, icon: "hourglass")
+                statusPill(text: loc["state_loading"], color: theme.colors.yellow, icon: "hourglass")
             case .notLoaded:
-                Text("未選択")
+                Text(loc["not_selected"])
                     .font(.headline).foregroundColor(theme.colors.subtext0)
-                statusPill(text: "未ロード", color: theme.colors.overlay0, icon: "minus.circle")
+                statusPill(text: loc["state_not_loaded"], color: theme.colors.overlay0, icon: "minus.circle")
             case .error(let msg):
-                Text("エラー")
+                Text(loc["error_occurred"])
                     .font(.headline).foregroundColor(theme.colors.red)
                 Text(msg).font(.caption2).foregroundColor(theme.colors.red).lineLimit(2)
             }
@@ -195,10 +199,10 @@ struct ModelManagementView: View {
             Image(systemName: "wifi.slash")
                 .foregroundColor(theme.colors.yellow)
             VStack(alignment: .leading, spacing: 2) {
-                Text("オフライン")
+                Text(loc["offline_warning_title"])
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(theme.colors.yellow)
-                Text("クラウドモデルにはインターネット接続が必要です")
+                Text(loc["offline_warning_sub"])
                     .font(.caption)
                     .foregroundColor(theme.colors.subtext0)
             }
@@ -228,7 +232,7 @@ struct ModelManagementView: View {
     @ViewBuilder
     private func localModelCard(for model: ModelType) -> some View {
         let isActive = isModelActive(model)
-        let hasMemory = LLMService.hasEnoughMemory(for: model)
+        let memStatus = LLMService.memoryStatus(for: model)
         let isDownloading = isModelDownloading(model)
         let isSwitchingThis = isSwitching && switchTargetModel == model
 
@@ -247,7 +251,7 @@ struct ModelManagementView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(model.displayName)
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .foregroundColor(hasMemory ? theme.colors.text : theme.colors.subtext0)
+                        .foregroundColor(theme.colors.text)
                     Text(model.descriptionText)
                         .font(.caption)
                         .foregroundColor(theme.colors.subtext1)
@@ -256,6 +260,7 @@ struct ModelManagementView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
+                    // ファイルサイズバッジ
                     Text(model.fileSize)
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
                         .foregroundColor(theme.colors.mauve)
@@ -263,17 +268,25 @@ struct ModelManagementView: View {
                         .background(theme.colors.mauve.opacity(0.12))
                         .clipShape(Capsule())
 
-                    HStack(spacing: 3) {
-                        Image(systemName: hasMemory ? "checkmark.seal.fill" : "xmark.seal.fill")
-                            .font(.system(size: 8))
-                        Text(hasMemory ? "対応" : "非対応")
-                            .font(.system(size: 10, weight: .medium))
-                    }
-                    .foregroundColor(hasMemory ? theme.colors.green : theme.colors.red)
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background((hasMemory ? theme.colors.green : theme.colors.red).opacity(0.1))
-                    .clipShape(Capsule())
+                    // メモリ状態バッジ（3段階）or βバッジ
+                    memoryStatusBadge(memStatus, for: model)
                 }
+            }
+
+            // メモリ注意警告（tightのみ表示）
+            if memStatus == .tight {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                        .foregroundColor(theme.colors.peach)
+                    Text(loc["mem_tight_warning"])
+                        .font(.caption2)
+                        .foregroundColor(theme.colors.subtext0)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(8)
+                .background(theme.colors.peach.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
             // ダウンロード進捗
@@ -281,16 +294,16 @@ struct ModelManagementView: View {
                 downloadProgressView(progress: progress)
             }
 
-            // アクションエリア
+            // アクションエリア（全機種でダウンロード・使用可能）
             HStack {
                 if isActive {
                     HStack(spacing: 5) {
                         Image(systemName: "checkmark.circle.fill").foregroundColor(theme.colors.green)
-                        Text("使用中").font(.subheadline.bold()).foregroundColor(theme.colors.green)
+                        Text(loc["in_use"]).font(.subheadline.bold()).foregroundColor(theme.colors.green)
                     }
                     Spacer()
                     Button { showUnloadConfirm = true } label: {
-                        Label("アンロード", systemImage: "eject.fill")
+                        Label(loc["unload_btn"], systemImage: "stop.circle")
                             .font(.caption.bold())
                             .foregroundColor(theme.colors.red)
                             .padding(.horizontal, 12).padding(.vertical, 6)
@@ -298,23 +311,16 @@ struct ModelManagementView: View {
                             .clipShape(Capsule())
                     }
                     .disabled(isInteractionDisabled)
-                } else if !hasMemory {
-                    HStack(spacing: 5) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(theme.colors.overlay0)
-                        Text("メモリ不足").font(.subheadline.bold()).foregroundColor(theme.colors.overlay0)
-                    }
-                    Spacer()
                 } else if isDownloading {
                     HStack(spacing: 6) {
                         ProgressView().tint(theme.colors.peach)
-                        Text("ダウンロード中...").font(.subheadline).foregroundColor(theme.colors.peach)
+                        Text(loc["downloading"]).font(.subheadline).foregroundColor(theme.colors.peach)
                     }
                     Spacer()
                 } else if isSwitchingThis {
                     HStack(spacing: 6) {
                         ProgressView().tint(theme.colors.blue)
-                        Text("切替中...").font(.subheadline).foregroundColor(theme.colors.blue)
+                        Text(loc["switching"]).font(.subheadline).foregroundColor(theme.colors.blue)
                     }
                     Spacer()
                 } else {
@@ -341,13 +347,97 @@ struct ModelManagementView: View {
                 .stroke(isActive ? theme.colors.green.opacity(0.3) : Color.clear, lineWidth: 1.5)
         )
         .shadow(color: .black.opacity(0.08), radius: 5, x: 0, y: 2)
-        .opacity(hasMemory ? 1.0 : 0.55)
+    }
+
+    /// メモリ状態バッジ（βモデルは "β" バッジを表示、それ以外は3段階）
+    private func memoryStatusBadge(_ status: LLMService.MemoryStatus, for model: ModelType) -> some View {
+        if model.isBeta {
+            return AnyView(
+                HStack(spacing: 3) {
+                    Image(systemName: "flask.fill").font(.system(size: 8))
+                    Text(loc["badge_beta"]).font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundColor(theme.colors.yellow)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(theme.colors.yellow.opacity(0.12))
+                .clipShape(Capsule())
+            )
+        }
+        let (icon, label, color): (String, String, Color) = {
+            switch status {
+            case .optimal: return ("checkmark.seal.fill", loc["mem_optimal"], theme.colors.green)
+            case .usable:  return ("seal",                loc["mem_usable"],  theme.colors.yellow)
+            case .tight:   return ("exclamationmark.triangle.fill", loc["mem_tight"], theme.colors.peach)
+            }
+        }()
+        return AnyView(
+            HStack(spacing: 3) {
+                Image(systemName: icon).font(.system(size: 8))
+                Text(label).font(.system(size: 10, weight: .medium))
+            }
+            .foregroundColor(color)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(color.opacity(0.1))
+            .clipShape(Capsule())
+        )
     }
 
     // MARK: - Cloud Models Section
 
+    // MARK: - Web Search Info Banner
+
+    private var webSearchInfoBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "magnifyingglass.circle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(theme.colors.blue)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(loc["web_search_banner_title"])
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(theme.colors.text)
+                Text(loc["web_search_banner_body"])
+                    .font(.caption)
+                    .foregroundColor(theme.colors.subtext0)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 6) {
+                    webSearchSupportTag(label: "Gemini", supported: true)
+                    webSearchSupportTag(label: "Claude", supported: true)
+                    webSearchSupportTag(label: "OpenAI", supported: false)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(theme.colors.blue.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(theme.colors.blue.opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+
+    private func webSearchSupportTag(label: String, supported: Bool) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: supported ? "checkmark" : "xmark")
+                .font(.system(size: 8, weight: .bold))
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundColor(supported ? theme.colors.green : theme.colors.overlay0)
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background((supported ? theme.colors.green : theme.colors.overlay0).opacity(0.12))
+        .clipShape(Capsule())
+    }
+
     private var cloudModelsSection: some View {
         VStack(spacing: 12) {
+            // Web検索対応状況バナー
+            webSearchInfoBanner
+
             // Geminiグループ
             cloudProviderGroup(
                 provider: .gemini,
@@ -393,7 +483,7 @@ struct ModelManagementView: View {
                             .font(.system(size: 10, design: .monospaced))
                             .foregroundColor(theme.colors.subtext0)
                     } else {
-                        Text("APIキー未設定")
+                        Text(loc["api_key_not_set"])
                             .font(.caption)
                             .foregroundColor(theme.colors.yellow)
                     }
@@ -408,7 +498,7 @@ struct ModelManagementView: View {
                     HStack(spacing: 4) {
                         Image(systemName: hasKey ? "key.fill" : "key")
                             .font(.system(size: 11))
-                        Text(hasKey ? "変更" : "設定")
+                        Text(hasKey ? loc["api_key_change"] : loc["api_key_setup"])
                             .font(.caption.weight(.semibold))
                     }
                     .foregroundColor(hasKey ? accentColor : theme.colors.yellow)
@@ -465,31 +555,44 @@ struct ModelManagementView: View {
                     .foregroundColor(isActive ? accentColor : theme.colors.subtext0)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(model.displayName)
                     .font(.system(.subheadline, design: .rounded).weight(.medium))
                     .foregroundColor(canUse ? theme.colors.text : theme.colors.subtext0)
                 Text(model.descriptionText)
                     .font(.caption)
                     .foregroundColor(theme.colors.subtext1)
+                // Web検索対応バッジ
+                if model.supportsWebSearch {
+                    HStack(spacing: 3) {
+                        Image(systemName: "globe")
+                            .font(.system(size: 8, weight: .semibold))
+                        Text(loc["web_search_badge"])
+                            .font(.system(size: 9, weight: .semibold))
+                    }
+                    .foregroundColor(theme.colors.blue)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(theme.colors.blue.opacity(0.10))
+                    .clipShape(Capsule())
+                }
             }
 
             Spacer()
 
             // 使用中 or ボタン
             if isActive {
-                statusPill(text: "使用中", color: accentColor, icon: "checkmark.circle.fill")
+                statusPill(text: loc["in_use"], color: accentColor, icon: "checkmark.circle.fill")
             } else if isSwitchingThis {
                 ProgressView().tint(accentColor).scaleEffect(0.8)
             } else if !hasKey {
-                Text("要設定")
+                Text(loc["key_required"])
                     .font(.caption.weight(.medium))
                     .foregroundColor(theme.colors.yellow)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(theme.colors.yellow.opacity(0.1))
                     .clipShape(Capsule())
             } else if !isOnline {
-                Text("オフライン")
+                Text(loc["offline"])
                     .font(.caption.weight(.medium))
                     .foregroundColor(theme.colors.overlay0)
                     .padding(.horizontal, 8).padding(.vertical, 4)
@@ -497,7 +600,7 @@ struct ModelManagementView: View {
                     .clipShape(Capsule())
             } else {
                 Button { switchToModel(model) } label: {
-                    Text("使用")
+                    Text(loc["use_btn"])
                         .font(.caption.weight(.bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 14).padding(.vertical, 7)
@@ -523,9 +626,9 @@ struct ModelManagementView: View {
         let totalGB = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
 
         return VStack(spacing: 10) {
-            infoRow(icon: "wifi", text: "ローカルモデルは初回のみWi-Fiでダウンロードが必要です")
-            infoRow(icon: "key.shield", text: "APIキーはiPhone内のKeychainに暗号化保存されます")
-            infoRow(icon: "memorychip", text: "このデバイスのメモリ: \(String(format: "%.1f", totalGB)) GB")
+            infoRow(icon: "wifi", text: loc["info_wifi"])
+            infoRow(icon: "key.shield", text: loc["info_keychain"])
+            infoRow(icon: "memorychip", text: String(format: loc["device_memory"], String(format: "%.1f", totalGB)))
         }
         .padding(16)
         .background(
@@ -602,17 +705,25 @@ struct ModelManagementView: View {
         return false
     }
 
+    private func isModelFileDownloaded(_ model: ModelType) -> Bool {
+        guard !model.ggufFilename.isEmpty else { return false }
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return FileManager.default.fileExists(atPath: docs.appendingPathComponent(model.ggufFilename).path)
+    }
+
     private func localActionLabel(_ model: ModelType) -> String {
         switch llmService.state {
-        case .ready, .generating, .paused: return "切り替え"
-        default: return "ダウンロード"
+        case .ready, .generating, .paused: return loc["switch_btn"]
+        default:
+            return isModelFileDownloaded(model) ? loc["use_model"] : loc["download_btn"]
         }
     }
 
     private func localActionIcon(_ model: ModelType) -> String {
         switch llmService.state {
         case .ready, .generating, .paused: return "arrow.triangle.2.circlepath"
-        default: return "arrow.down.circle"
+        default:
+            return isModelFileDownloaded(model) ? "play.circle.fill" : "arrow.down.circle"
         }
     }
 
@@ -639,4 +750,5 @@ extension APIProvider: Identifiable {
     ModelManagementView()
         .environmentObject(LLMService.shared)
         .environmentObject(ThemeManager.shared)
+        .environmentObject(LocalizationService.shared)
 }

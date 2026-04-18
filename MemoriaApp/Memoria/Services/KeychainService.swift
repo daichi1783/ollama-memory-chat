@@ -7,10 +7,13 @@ import Security
 
 // MARK: - API Provider
 
-enum APIProvider: String, CaseIterable {
+enum APIProvider: String, CaseIterable, Identifiable {
     case gemini = "com.memoria.api.gemini"
     case claude = "com.memoria.api.claude"
     case openai = "com.memoria.api.openai"
+
+    /// Identifiable: rawValue をIDとして使用（.sheet(item:) 対応）
+    var id: String { rawValue }
 
     var displayName: String {
         switch self {

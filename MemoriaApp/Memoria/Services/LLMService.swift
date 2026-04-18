@@ -170,6 +170,24 @@ enum ModelType: String, CaseIterable {
         }
     }
 
+    /// Web検索対応（クラウドモデルのプロバイダーネイティブ検索機能が有効かどうか）
+    /// Gemini: Google Search グラウンディング / Claude: web_search_20250305 ツール
+    var supportsWebSearch: Bool {
+        guard let provider = cloudProvider else { return false }
+        switch provider {
+        case .gemini, .claude: return true
+        case .openai: return false
+        }
+    }
+
+    /// ベータ/実験的モデル（現バージョンの llama.cpp では未保証）
+    var isBeta: Bool {
+        switch self {
+        case .gemma4_e2b: return true
+        default: return false
+        }
+    }
+
     var estimatedMemoryUsage: UInt64 {
         switch self {
         case .gemma3_1b: return 800 * 1024 * 1024
@@ -262,13 +280,26 @@ class LLMService: ObservableObject {
         ProcessInfo.processInfo.physicalMemory >= 6 * 1024 * 1024 * 1024
     }
 
-    /// ローカルモデル一覧（デバイスメモリに応じて変動）
+    /// ローカルモデル一覧（全機種で両モデルを表示・使用可能）
     static var availableLocalModels: [ModelType] {
-        if supportsLargeModel {
-            return [.gemma3_1b, .gemma4_e2b]
-        } else {
-            return [.gemma3_1b]
-        }
+        return [.gemma3_1b, .gemma4_e2b]
+    }
+
+    /// デバイスのメモリ状態を3段階で返す
+    enum MemoryStatus {
+        case optimal    // 推奨スペック以上
+        case usable     // 動作可能だがメモリ圧迫に注意
+        case tight      // メモリが少ない（動作するが不安定になる可能性）
+    }
+
+    static func memoryStatus(for modelType: ModelType) -> MemoryStatus {
+        let available = ProcessInfo.processInfo.physicalMemory
+        let required = modelType.estimatedMemoryUsage
+        guard required > 0 else { return .optimal }
+        let ratio = Double(available) / Double(required)
+        if ratio >= 1.8 { return .optimal }
+        if ratio >= 1.2 { return .usable }
+        return .tight
     }
 
     /// クラウドモデル一覧（常に全モデルを表示、APIキー未設定は設定を促す）

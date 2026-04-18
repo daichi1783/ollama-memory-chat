@@ -8,6 +8,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var theme: ThemeManager
+    @EnvironmentObject var loc: LocalizationService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
@@ -18,14 +19,7 @@ struct SettingsView: View {
     @State private var globalMemoryCount: Int = 0
     @State private var sessionCount: Int = 0
     @State private var showDeleteMemoryAlert = false
-    @State private var selectedLanguage: AppLanguage
-
-    private static let languageKey = "appLanguage"
-
-    init() {
-        let savedLang = UserDefaults.standard.string(forKey: Self.languageKey) ?? "ja"
-        _selectedLanguage = State(initialValue: AppLanguage(rawValue: savedLang) ?? .japanese)
-    }
+    @State private var commandCount: Int = 0
 
     var body: some View {
         NavigationStack {
@@ -33,19 +27,20 @@ struct SettingsView: View {
                 appearanceSection
                 modelSection
                 memorySection
+                commandSection
                 languageSection
                 aboutSection
             }
             .scrollContentBackground(.hidden)
             .background(theme.colors.base)
-            .navigationTitle("設定")
+            .navigationTitle(loc["settings"])
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(theme.colors.surface0, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(theme.currentTheme == .dark ? .dark : .light, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("完了") {
+                    Button(loc["done"]) {
                         dismiss()
                     }
                     .foregroundColor(theme.colors.blue)
@@ -57,13 +52,13 @@ struct SettingsView: View {
             .onChange(of: colorScheme) { _, newScheme in
                 theme.applySystemColorScheme(newScheme)
             }
-            .alert("グローバルメモリを全削除", isPresented: $showDeleteMemoryAlert) {
-                Button("削除", role: .destructive) {
+            .alert(loc["delete_memory_title"], isPresented: $showDeleteMemoryAlert) {
+                Button(loc["delete"], role: .destructive) {
                     deleteAllGlobalMemories()
                 }
-                Button("キャンセル", role: .cancel) {}
+                Button(loc["cancel"], role: .cancel) {}
             } message: {
-                Text("すべてのグローバルメモリが削除されます。この操作は取り消せません。")
+                Text(loc["delete_memory_msg"])
             }
         }
         .preferredColorScheme(theme.preferredColorScheme)
@@ -84,7 +79,7 @@ struct SettingsView: View {
                 }
             )) {
                 Label {
-                    Text("システムテーマに従う")
+                    Text(loc["follow_system_theme"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "iphone")
@@ -107,7 +102,7 @@ struct SettingsView: View {
                 }
             } label: {
                 Label {
-                    Text("テーマ")
+                    Text(loc["theme_label"])
                         .foregroundColor(theme.useSystemTheme ? theme.colors.overlay0 : theme.colors.text)
                 } icon: {
                     Image(systemName: theme.currentTheme == .dark ? "moon.fill" : "sun.max.fill")
@@ -122,13 +117,13 @@ struct SettingsView: View {
                 .listRowBackground(theme.colors.surface0)
                 .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
         } header: {
-            sectionHeader("外観")
+            sectionHeader(loc["section_appearance"])
         }
     }
 
     private var colorPreviewStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("カラーパレット")
+            Text(loc["color_palette"])
                 .font(.caption)
                 .foregroundColor(theme.colors.subtext0)
 
@@ -164,7 +159,7 @@ struct SettingsView: View {
             // Current model name + size
             HStack {
                 Label {
-                    Text("モデル")
+                    Text(loc["model_label"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "cpu")
@@ -185,7 +180,7 @@ struct SettingsView: View {
             // Memory usage
             HStack {
                 Label {
-                    Text("メモリ使用量")
+                    Text(loc["memory_usage"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "memorychip")
@@ -203,9 +198,10 @@ struct SettingsView: View {
                 ModelManagementView()
                     .environmentObject(theme)
                     .environmentObject(llmService)
+                    .environmentObject(loc)
             } label: {
                 Label {
-                    Text("モデルを変更")
+                    Text(loc["change_model"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "arrow.triangle.2.circlepath")
@@ -214,7 +210,7 @@ struct SettingsView: View {
             }
             .listRowBackground(theme.colors.surface0)
         } header: {
-            sectionHeader("モデル")
+            sectionHeader(loc["section_model"])
         }
     }
 
@@ -232,26 +228,32 @@ struct SettingsView: View {
 
     private var memorySection: some View {
         Section {
-            // Global memory count
-            HStack {
-                Label {
-                    Text("グローバルメモリ")
-                        .foregroundColor(theme.colors.text)
-                } icon: {
-                    Image(systemName: "brain")
-                        .foregroundColor(theme.colors.mauve)
+            // Global memory → NavigationLink で一覧画面へ
+            NavigationLink {
+                GlobalMemoryManagementView()
+                    .environmentObject(theme)
+                    .environmentObject(loc)
+            } label: {
+                HStack {
+                    Label {
+                        Text(loc["global_memory_label"])
+                            .foregroundColor(theme.colors.text)
+                    } icon: {
+                        Image(systemName: "brain")
+                            .foregroundColor(theme.colors.mauve)
+                    }
+                    Spacer()
+                    Text("\(globalMemoryCount) \(loc["mem_count_unit"])")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(theme.colors.subtext1)
                 }
-                Spacer()
-                Text("\(globalMemoryCount) 件")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(theme.colors.subtext1)
             }
             .listRowBackground(theme.colors.surface0)
 
             // Session count
             HStack {
                 Label {
-                    Text("セッション数")
+                    Text(loc["session_count_label"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "bubble.left.and.text.bubble.right")
@@ -269,7 +271,7 @@ struct SettingsView: View {
                 showDeleteMemoryAlert = true
             } label: {
                 Label {
-                    Text("グローバルメモリを全削除")
+                    Text(loc["clear_global_memory"])
                         .foregroundColor(theme.colors.red)
                 } icon: {
                     Image(systemName: "trash")
@@ -280,7 +282,55 @@ struct SettingsView: View {
             .opacity(globalMemoryCount == 0 ? 0.5 : 1.0)
             .listRowBackground(theme.colors.surface0)
         } header: {
-            sectionHeader("記憶")
+            sectionHeader(loc["section_memory"])
+        }
+    }
+
+    // MARK: - カスタムコマンド (Custom Commands)
+
+    private var commandSection: some View {
+        Section {
+            NavigationLink {
+                UserCommandManagementView()
+                    .environmentObject(theme)
+                    .environmentObject(loc)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(theme.colors.blue)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(theme.colors.blue.opacity(0.12))
+                        )
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(loc["cmd_settings_row"])
+                            .foregroundColor(theme.colors.text)
+                        Text(loc["cmd_settings_sub"])
+                            .font(.caption)
+                            .foregroundColor(theme.colors.subtext0)
+                    }
+
+                    Spacer()
+
+                    if commandCount > 0 {
+                        Text(String(format: loc["cmd_count_fmt"], commandCount))
+                            .font(.caption2.weight(.medium))
+                            .foregroundColor(theme.colors.blue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                Capsule()
+                                    .fill(theme.colors.blue.opacity(0.12))
+                            )
+                    }
+                }
+            }
+            .listRowBackground(theme.colors.surface0)
+        } header: {
+            sectionHeader(loc["section_commands"])
         }
     }
 
@@ -288,25 +338,25 @@ struct SettingsView: View {
 
     private var languageSection: some View {
         Section {
-            Picker(selection: $selectedLanguage) {
+            Picker(selection: Binding(
+                get: { loc.currentLanguage },
+                set: { loc.currentLanguage = $0 }
+            )) {
                 ForEach(AppLanguage.allCases) { lang in
                     Text(lang.displayName).tag(lang)
                 }
             } label: {
                 Label {
-                    Text("アプリの言語")
+                    Text(loc["app_language"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "globe")
                         .foregroundColor(theme.colors.sky)
                 }
             }
-            .onChange(of: selectedLanguage) { _, newLang in
-                UserDefaults.standard.set(newLang.rawValue, forKey: Self.languageKey)
-            }
             .listRowBackground(theme.colors.surface0)
         } header: {
-            sectionHeader("言語")
+            sectionHeader(loc["section_language"])
         }
     }
 
@@ -319,7 +369,7 @@ struct SettingsView: View {
             // App version
             HStack {
                 Label {
-                    Text("バージョン")
+                    Text(loc["version_label"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "info.circle")
@@ -336,7 +386,7 @@ struct SettingsView: View {
             HStack {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("推論エンジン")
+                        Text(loc["inference_engine"])
                             .foregroundColor(theme.colors.text)
                         Text("Powered by Gemma (Google DeepMind)")
                             .font(.caption)
@@ -352,7 +402,7 @@ struct SettingsView: View {
             // Offline badge
             HStack {
                 Label {
-                    Text("完全オフライン対応")
+                    Text(loc["fully_offline_label"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "lock.shield.fill")
@@ -369,7 +419,7 @@ struct SettingsView: View {
                 showDisclaimerSheet = true
             } label: {
                 Label {
-                    Text("免責事項")
+                    Text(loc["disclaimer_label"])
                         .foregroundColor(theme.colors.text)
                 } icon: {
                     Image(systemName: "exclamationmark.triangle")
@@ -382,7 +432,7 @@ struct SettingsView: View {
             }
 
         } header: {
-            sectionHeader("アプリ情報")
+            sectionHeader(loc["section_about"])
         }
     }
 
@@ -393,29 +443,29 @@ struct SettingsView: View {
                     disclaimerItem(
                         icon: "exclamationmark.triangle.fill",
                         iconColor: theme.colors.yellow,
-                        title: "AIの回答精度について",
-                        body: "Memoriaが生成する回答はAIモデルによる推測です。内容の正確性・完全性・適時性を一切保証しません。医療・法律・財務等の重要な判断には専門家へご相談ください。AIの回答を参考にした結果生じたいかなる損害についても開発者は責任を負いません。"
+                        title: loc["disclaimer_ai_title"],
+                        body: loc["disclaimer_ai_body"]
                     )
                     disclaimerItem(
                         icon: "cpu",
                         iconColor: theme.colors.teal,
-                        title: "使用AIモデルの帰属",
-                        body: "本アプリはGoogle DeepMindが開発したGemma（オープンウェイトモデル）を使用しています。GemmaはGoogle Gemma利用規約のもとで提供されています。モデルのダウンロードにはHuggingFaceの利用規約への同意が必要です。"
+                        title: loc["disclaimer_model_title"],
+                        body: loc["disclaimer_model_body"]
                     )
                     disclaimerItem(
                         icon: "lock.shield",
                         iconColor: theme.colors.green,
-                        title: "プライバシー",
-                        body: "会話データ・AIの記憶はすべてお使いのiPhone内にのみ保存されます。マイクは音声入力にのみ使用し、音声データは変換後即時廃棄されます。外部サーバーへのデータ送信は行いません（AIモデルの初回ダウンロードを除く）。"
+                        title: loc["disclaimer_privacy_title"],
+                        body: loc["disclaimer_privacy_body"]
                     )
                     disclaimerItem(
                         icon: "doc.text",
                         iconColor: theme.colors.blue,
-                        title: "オープンソースライセンス",
-                        body: "本アプリはLLM.swift（MIT）、GRDB.swift（MIT）、llama.cpp（MIT）、Catppuccin（MIT）を使用しています。各ライブラリの著作権はそれぞれの作者に帰属します。"
+                        title: loc["disclaimer_oss_title"],
+                        body: loc["disclaimer_oss_body"]
                     )
 
-                    Text("最終更新: 2026年4月")
+                    Text(loc["last_updated"])
                         .font(.caption)
                         .foregroundColor(theme.colors.overlay0)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -424,13 +474,13 @@ struct SettingsView: View {
                 .padding(20)
             }
             .background(theme.colors.base)
-            .navigationTitle("免責事項")
+            .navigationTitle(loc["disclaimer_nav_title"])
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(theme.colors.surface0, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("閉じる") { showDisclaimerSheet = false }
+                    Button(loc["close"]) { showDisclaimerSheet = false }
                         .foregroundColor(theme.colors.blue)
                 }
             }
@@ -476,9 +526,12 @@ struct SettingsView: View {
             globalMemoryCount = memories.count
             let sessions = try db.getAllSessions()
             sessionCount = sessions.count
+            let commands = try db.getAllUserCommands()
+            commandCount = commands.count
         } catch {
             globalMemoryCount = 0
             sessionCount = 0
+            commandCount = 0
         }
     }
 
@@ -502,4 +555,5 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .environmentObject(ThemeManager.shared)
+        .environmentObject(LocalizationService.shared)
 }
