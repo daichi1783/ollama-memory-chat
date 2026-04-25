@@ -9,6 +9,8 @@ struct ContentView: View {
     @EnvironmentObject var loc: LocalizationService
     @StateObject private var llmService = LLMService.shared
     @StateObject private var chatService = ChatService()
+    /// システムカラースキームの監視（Follow System Theme用）
+    @Environment(\.colorScheme) private var colorScheme
     /// モデルが一度でもreadyになったかを追跡（NavigationStack破棄を防止）
     @State private var hasLoadedOnce = false
     /// NavigationStackのパス（@Stateで管理することでSwiftUIの最も信頼性の高いバインディングを使用）
@@ -68,6 +70,14 @@ struct ContentView: View {
                 .zIndex(5)
             }
         }
+        .onAppear {
+            // アプリ起動時にシステムテーマを即時反映
+            theme.applySystemColorScheme(colorScheme)
+        }
+        .onChange(of: colorScheme) { _, newScheme in
+            // システムのダーク/ライト切り替えをThemeManagerに伝達
+            theme.applySystemColorScheme(newScheme)
+        }
         .task {
             if llmService.state == .notLoaded {
                 await llmService.loadModel(type: .gemma3_1b)
@@ -105,10 +115,14 @@ struct ContentView: View {
                 }
         }
         .tint(theme.colors.blue)
-        // createNewSession() が pendingNavigationId をセットしたら即ナビゲーション
+        // createNewSession() / selectSession() が pendingNavigationId をセットしたら即ナビゲーション
+        // NOTE: append() ではなく「パスを丸ごと置き換え」にすることで
+        //       スタック蓄積バグ（同一 ChatView が複数 push されて Back を何度も押す必要がある）を防止
         .onChange(of: chatService.pendingNavigationId) { _, newId in
             if let id = newId {
-                navigationPath.append(id)
+                var newPath = NavigationPath()
+                newPath.append(id)
+                navigationPath = newPath
                 // シグナルをリセット（重複ナビゲーション防止）
                 chatService.pendingNavigationId = nil
             }

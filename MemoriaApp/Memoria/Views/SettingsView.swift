@@ -97,7 +97,7 @@ struct SettingsView: View {
                 }
             )) {
                 ForEach(AppTheme.allCases) { appTheme in
-                    Text(appTheme.displayName)
+                    Text(loc[appTheme == .dark ? "theme_dark" : "theme_light"])
                         .tag(appTheme)
                 }
             } label: {
@@ -170,7 +170,9 @@ struct SettingsView: View {
                     Text(llmService.currentModelType.displayName)
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(theme.colors.subtext1)
-                    Text(llmService.currentModelType.fileSize)
+                    Text(llmService.currentModelType.isLocal
+                         ? llmService.currentModelType.fileSize
+                         : loc[llmService.currentModelType.fileSize])
                         .font(.caption)
                         .foregroundColor(theme.colors.overlay0)
                 }
@@ -260,7 +262,7 @@ struct SettingsView: View {
                         .foregroundColor(theme.colors.sapphire)
                 }
                 Spacer()
-                Text("\(sessionCount) 件")
+                Text("\(sessionCount) \(loc["mem_count_unit"])")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(theme.colors.subtext1)
             }
@@ -429,6 +431,8 @@ struct SettingsView: View {
             .listRowBackground(theme.colors.surface0)
             .sheet(isPresented: $showDisclaimerSheet) {
                 disclaimerSheet
+                    .environmentObject(theme)
+                    .environmentObject(loc)
             }
 
         } header: {

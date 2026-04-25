@@ -25,56 +25,57 @@ struct ModelManagementView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // 現在のモデルステータスヘッダー
-                    headerSection
+        // NavigationStack は削除 — SettingsView の NavigationStack 内で動作するため
+        // SettingsView が sheet として表示される場合もその NavigationStack が使われる
+        // （二重 NavigationStack のネストによる Back ボタン破壊を防止）
+        ScrollView {
+            VStack(spacing: 20) {
+                // 現在のモデルステータスヘッダー
+                headerSection
 
-                    // オフライン警告
-                    if !isOnline {
-                        offlineWarningBanner
-                    }
-
-                    // ローカルモデルセクション
-                    sectionHeader(title: loc["local_models"], icon: "iphone", subtitle: loc["local_models_sub"])
-                    localModelsSection
-
-                    // クラウドモデルセクション
-                    sectionHeader(title: loc["cloud_models"], icon: "cloud", subtitle: loc["cloud_models_sub"])
-                    cloudModelsSection
-
-                    // 下部情報
-                    bottomInfoSection
+                // オフライン警告
+                if !isOnline {
+                    offlineWarningBanner
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+
+                // ローカルモデルセクション
+                sectionHeader(title: loc["local_models"], icon: "iphone", subtitle: loc["local_models_sub"])
+                localModelsSection
+
+                // クラウドモデルセクション
+                sectionHeader(title: loc["cloud_models"], icon: "cloud", subtitle: loc["cloud_models_sub"])
+                cloudModelsSection
+
+                // 下部情報
+                bottomInfoSection
             }
-            .background(theme.colors.base.ignoresSafeArea())
-            .navigationTitle(loc["model_mgmt_title"])
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.colors.mantle, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .confirmationDialog(
-                loc["unload_confirm_title"],
-                isPresented: $showUnloadConfirm,
-                titleVisibility: .visible
-            ) {
-                Button(loc["unload_confirm_action"], role: .destructive) {
-                    llmService.unloadModel()
-                }
-                Button(loc["cancel"], role: .cancel) {}
-            } message: {
-                Text(loc["unload_confirm_msg"])
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+        .background(theme.colors.base.ignoresSafeArea())
+        .navigationTitle(loc["model_mgmt_title"])
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(theme.colors.mantle, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .confirmationDialog(
+            loc["unload_confirm_title"],
+            isPresented: $showUnloadConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(loc["unload_confirm_action"], role: .destructive) {
+                llmService.unloadModel()
             }
-            .sheet(item: $apiKeySetupProvider) { provider in
-                APIKeySetupView(provider: provider)
-                    .environmentObject(theme)
-                    .environmentObject(loc)
-            }
-            .task {
-                await monitorNetworkPath()
-            }
+            Button(loc["cancel"], role: .cancel) {}
+        } message: {
+            Text(loc["unload_confirm_msg"])
+        }
+        .sheet(item: $apiKeySetupProvider) { provider in
+            APIKeySetupView(provider: provider)
+                .environmentObject(theme)
+                .environmentObject(loc)
+        }
+        .task {
+            await monitorNetworkPath()
         }
     }
 
@@ -252,7 +253,7 @@ struct ModelManagementView: View {
                     Text(model.displayName)
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         .foregroundColor(theme.colors.text)
-                    Text(model.descriptionText)
+                    Text(loc[model.descriptionText])
                         .font(.caption)
                         .foregroundColor(theme.colors.subtext1)
                 }
@@ -261,7 +262,7 @@ struct ModelManagementView: View {
 
                 VStack(alignment: .trailing, spacing: 4) {
                     // ファイルサイズバッジ
-                    Text(model.fileSize)
+                    Text(model.isLocal ? model.fileSize : loc[model.fileSize])
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
                         .foregroundColor(theme.colors.mauve)
                         .padding(.horizontal, 7).padding(.vertical, 3)

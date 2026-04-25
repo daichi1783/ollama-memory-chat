@@ -108,20 +108,21 @@ enum ModelType: String, CaseIterable {
         switch self {
         case .gemma3_1b:   return "~600MB"
         case .gemma4_e2b:  return "~1.3GB"
-        default:           return "クラウド"
+        default:           return "model_size_cloud"   // LocalizationService のキー
         }
     }
 
+    /// ローカライズキーを返す — View側で loc[model.descriptionText] として使用する
     var descriptionText: String {
         switch self {
-        case .gemma3_1b:    return "全端末対応・完全オフライン"
-        case .gemma4_e2b:   return "iPhone 16以降・高性能"
-        case .gemini2Flash: return "高速・無料枠あり"
-        case .gemini15Pro:  return "高精度・長文対応"
-        case .claudeHaiku:  return "高速・低コスト"
-        case .claudeSonnet: return "バランス型・高精度"
-        case .gpt4oMini:    return "低コスト・高速"
-        case .gpt4o:        return "最高精度"
+        case .gemma3_1b:    return "model_desc_gemma3_1b"
+        case .gemma4_e2b:   return "model_desc_gemma4_e2b"
+        case .gemini2Flash: return "model_desc_gemini2flash"
+        case .gemini15Pro:  return "model_desc_gemini15pro"
+        case .claudeHaiku:  return "model_desc_claude_haiku"
+        case .claudeSonnet: return "model_desc_claude_sonnet"
+        case .gpt4oMini:    return "model_desc_gpt4o_mini"
+        case .gpt4o:        return "model_desc_gpt4o"
         }
     }
 

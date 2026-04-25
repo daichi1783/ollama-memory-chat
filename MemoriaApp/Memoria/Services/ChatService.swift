@@ -115,6 +115,22 @@ class ChatService: ObservableObject {
         pendingNavigationId = id
     }
 
+    /// セッションをリセット（ナビゲーションなし — /clear コマンド専用）
+    /// createNewSession() と異なり pendingNavigationId をセットしないため、
+    /// ChatView の上に余分な ChatView が push されない
+    func clearCurrentSession() {
+        isGenerating = false
+        do {
+            let session = try db.createSession()
+            currentSessionId = session.id
+            messages = []
+            refreshSessions()
+            // pendingNavigationId はセットしない（すでに ChatView 内にいるため不要）
+        } catch {
+            logger.error("Failed to clear session: \(error.localizedDescription)")
+        }
+    }
+
     /// 既存セッションを読み込む
     func loadSession(id: Int64) {
         currentSessionId = id
@@ -584,8 +600,10 @@ class ChatService: ObservableObject {
             persistAndAppendAssistant(helpText, sessionId: sessionId)
 
         case "clear":
-            createNewSession()
-            // clear は新セッション作成のため保存不要（新セッションIDが変わる）
+            // createNewSession() ではなく clearCurrentSession() を使う
+            // → createNewSession() は pendingNavigationId をセットするため
+            //   ChatView の上にさらに ChatView が push されてしまうバグの原因となる
+            clearCurrentSession()
             messages.append(ChatMessage(role: "assistant", content: "新しい会話を始めました。"))
 
         case "remember":
