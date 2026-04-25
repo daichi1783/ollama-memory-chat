@@ -63,7 +63,7 @@ struct APIKeySetupView: View {
                         .foregroundColor(theme.colors.blue)
                 }
             }
-            .alert(loc["delete_memory_title"], isPresented: $showDeleteAlert) {
+            .alert(loc["api_key_delete_confirm"], isPresented: $showDeleteAlert) {
                 Button(loc["delete"], role: .destructive) {
                     KeychainService.shared.deleteAPIKey(for: provider)
                     apiKeyInput = ""
@@ -140,7 +140,7 @@ struct APIKeySetupView: View {
 
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(existingMasked != nil ? "APIキーを更新する" : "APIキーを入力")
+            Text(existingMasked != nil ? loc["api_key_update"] : loc["api_key_enter"])
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(theme.colors.text)
 
@@ -148,10 +148,10 @@ struct APIKeySetupView: View {
             HStack(spacing: 12) {
                 Group {
                     if showKey {
-                        TextField("APIキーを貼り付け...", text: $apiKeyInput)
+                        TextField(loc["api_key_paste_placeholder"], text: $apiKeyInput)
                             .font(.system(.body, design: .monospaced))
                     } else {
-                        SecureField("APIキーを貼り付け...", text: $apiKeyInput)
+                        SecureField(loc["api_key_paste_placeholder"], text: $apiKeyInput)
                             .font(.system(.body, design: .monospaced))
                     }
                 }
@@ -201,7 +201,7 @@ struct APIKeySetupView: View {
             Button {
                 saveKey()
             } label: {
-                Text("保存する")
+                Text(loc["save"])
                     .font(.body.weight(.semibold))
                     .foregroundColor(theme.colors.base)
                     .frame(maxWidth: .infinity)
@@ -228,8 +228,8 @@ struct APIKeySetupView: View {
                 .foregroundColor(isValid ? theme.colors.green : theme.colors.yellow)
                 .font(.caption)
             Text(isValid
-                 ? "正しい形式のAPIキーです"
-                 : "形式が異なります（\(provider.keyPrefix)... で始まる必要があります）")
+                 ? loc["api_key_valid_msg"]
+                 : String(format: loc["api_key_invalid_prefix_fmt"], provider.keyPrefix))
                 .font(.caption)
                 .foregroundColor(isValid ? theme.colors.green : theme.colors.yellow)
         }
@@ -240,13 +240,13 @@ struct APIKeySetupView: View {
             switch result {
             case .success:
                 Image(systemName: "checkmark.circle.fill").foregroundColor(theme.colors.green)
-                Text("APIキーを保存しました").foregroundColor(theme.colors.green)
+                Text(loc["api_key_saved_msg"]).foregroundColor(theme.colors.green)
             case .invalidFormat:
                 Image(systemName: "exclamationmark.triangle.fill").foregroundColor(theme.colors.yellow)
-                Text("APIキーの形式が正しくありません").foregroundColor(theme.colors.yellow)
+                Text(loc["api_key_invalid_format_msg"]).foregroundColor(theme.colors.yellow)
             case .deleted:
                 Image(systemName: "trash.fill").foregroundColor(theme.colors.red)
-                Text("APIキーを削除しました").foregroundColor(theme.colors.red)
+                Text(loc["api_key_deleted_msg"]).foregroundColor(theme.colors.red)
             }
         }
         .font(.caption.weight(.medium))
@@ -264,22 +264,22 @@ struct APIKeySetupView: View {
 
     private var getKeyGuide: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("APIキーの取得方法")
+            Text(loc["api_key_how_to_get"])
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(theme.colors.text)
 
             VStack(alignment: .leading, spacing: 8) {
-                guideStep(number: "1", text: "下のリンクから\(provider.displayName)の公式サイトを開く")
-                guideStep(number: "2", text: "アカウントを作成またはサインイン")
-                guideStep(number: "3", text: "APIキーを発行してコピー")
-                guideStep(number: "4", text: "このページに戻って貼り付け")
+                guideStep(number: "1", text: String(format: loc["api_key_guide_step1_fmt"], provider.displayName))
+                guideStep(number: "2", text: loc["api_key_guide_step2"])
+                guideStep(number: "3", text: loc["api_key_guide_step3"])
+                guideStep(number: "4", text: loc["api_key_guide_step4"])
             }
 
             // リンクボタン
             Link(destination: URL(string: provider.keyObtainURL)!) {
                 HStack {
                     Image(systemName: "safari")
-                    Text("\(provider.displayName) でAPIキーを取得")
+                    Text(String(format: loc["api_key_get_link_fmt"], provider.displayName))
                     Spacer()
                     Image(systemName: "arrow.up.right")
                         .font(.caption)
@@ -345,7 +345,7 @@ struct APIKeySetupView: View {
             Image(systemName: "lock.shield")
                 .font(.caption)
                 .foregroundColor(theme.colors.green)
-            Text("APIキーはiPhoneのKeychain（セキュアストレージ）に保存されます。Memoriaのサーバーには一切送信されません。クラウドAIの利用料金はご自身のAPIアカウントに課金されます。")
+            Text(loc["api_key_security_note"])
                 .font(.caption)
                 .foregroundColor(theme.colors.subtext0)
                 .lineSpacing(2)
@@ -387,12 +387,9 @@ struct APIKeySetupView: View {
 
     private var providerCostNote: String {
         switch provider {
-        case .gemini:
-            return "Gemini 2.0 Flash は無料枠あり（1日あたり最大1,500リクエスト）。超過分は従量課金。"
-        case .claude:
-            return "Claude Haiku は最安値モデル。1Mトークンあたり約$0.25。プリペイド制。"
-        case .openai:
-            return "GPT-4o mini は最安値モデル。1Mトークンあたり約$0.15。プリペイド制。"
+        case .gemini: return loc["api_key_cost_gemini"]
+        case .claude:  return loc["api_key_cost_claude"]
+        case .openai:  return loc["api_key_cost_openai"]
         }
     }
 }

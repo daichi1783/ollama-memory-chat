@@ -34,6 +34,9 @@ struct SessionListView: View {
     @State private var showRenameAlert = false
     @State private var sessionToRename: SessionDisplayItem?
     @State private var renameText = ""
+    // 設定画面（sheet で表示 — NavigationLink push ではなく sheet にすることで
+    // ContentView の NavigationStack との三重ネストを回避し、戻るボタンバグを防止）
+    @State private var showSettings = false
 
     private let db = DatabaseService.shared
 
@@ -48,11 +51,22 @@ struct SessionListView: View {
         .background(theme.colors.base)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: SettingsView()) {
+                // NavigationLink(destination:) から Button + sheet に変更
+                // 理由: SettingsView を NavigationLink で push すると ContentView の
+                // NavigationStack に SettingsView 独自の NavigationStack がネストされ、
+                // Back ボタンの挙動が壊れる（ChatView が再 push される）
+                Button {
+                    showSettings = true
+                } label: {
                     Image(systemName: "gearshape")
                         .foregroundColor(theme.colors.subtext0)
                 }
             }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environmentObject(theme)
+                .environmentObject(loc)
         }
         .onAppear {
             loadSessions()

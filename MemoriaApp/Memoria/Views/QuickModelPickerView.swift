@@ -278,7 +278,7 @@ struct QuickModelPickerView: View {
                     .foregroundColor(theme.colors.text)
                     .lineLimit(1)
                 HStack(spacing: 5) {
-                    Text(model.fileSize)
+                    Text(model.isLocal ? model.fileSize : loc[model.fileSize])
                         .font(.caption2)
                         .foregroundColor(theme.colors.subtext0)
                     Text("·")
@@ -335,7 +335,7 @@ struct QuickModelPickerView: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(canUse ? theme.colors.text : theme.colors.overlay0)
                     .lineLimit(1)
-                Text(model.descriptionText)
+                Text(loc[model.descriptionText])
                     .font(.caption2)
                     .foregroundColor(theme.colors.subtext0)
             }

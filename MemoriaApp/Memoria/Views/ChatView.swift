@@ -459,7 +459,7 @@ struct ChatView: View {
             micPulse = newState == .listening
         }
         .sensoryFeedback(.impact(weight: .light), trigger: voiceService.state == .listening)
-        .confirmationDialog("音声入力の言語を選択", isPresented: $showVoiceLanguagePicker, titleVisibility: .visible) {
+        .confirmationDialog(loc["voice_language_picker_title"], isPresented: $showVoiceLanguagePicker, titleVisibility: .visible) {
             Button("🇯🇵 日本語") {
                 Task {
                     voiceService.setLanguage(Locale(identifier: "ja-JP"))
@@ -478,7 +478,7 @@ struct ChatView: View {
                     await voiceService.startListening()
                 }
             }
-            Button("キャンセル", role: .cancel) {}
+            Button(loc["cancel"], role: .cancel) {}
         }
     }
 
@@ -587,7 +587,7 @@ struct ChatView: View {
                         Image(systemName: "plus.circle")
                             .font(.system(size: 13))
                             .foregroundColor(theme.colors.blue)
-                        Text("コマンドを追加")
+                        Text(loc["cmd_add_title"])
                             .font(.caption2.weight(.semibold))
                             .foregroundColor(theme.colors.blue)
                     }
@@ -766,15 +766,13 @@ struct MessageBubbleView: View {
                 font: UIFont.preferredFont(forTextStyle: .body)
             )
         } else {
-            // AIメッセージ: Markdown対応 + 部分選択可能
-            // NOTE: .textSelection(.enabled) をここ（VStackコンテナ）に付けると
-            //       全ブロックが1ユニットとして扱われ全文コピーになる。
-            //       MarkdownTextView 内部の各 Text に個別に付けることで
-            //       段落単位の部分選択が可能になる。
+            // AIメッセージ: Markdown対応 + UITextViewベースの部分選択
+            // SelectableRichTextView (UITextView) を使うことで長押し→範囲ドラッグが正常動作する
             MarkdownTextView(
                 text: message.content,
                 textColor: theme.colors.text,
-                codeBackgroundColor: theme.colors.surface1
+                codeBackgroundColor: theme.colors.surface1,
+                selectionTintColor: UIColor(theme.colors.blue)
             )
         }
     }
@@ -786,6 +784,8 @@ struct MarkdownTextView: View {
     let text: String
     let textColor: Color
     let codeBackgroundColor: Color
+    /// UITextView の選択ハイライト色（バブル背景に合わせて呼び出し側から指定）
+    var selectionTintColor: UIColor = .systemBlue
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -794,9 +794,12 @@ struct MarkdownTextView: View {
                 case .codeBlock(let code, _):
                     codeBlockView(code)
                 case .text(let content):
-                    // NOTE: VStackコンテナではなく各Textに個別付与することで段落単位の部分選択が可能
-                    Text(buildAttributedString(content))
-                        .textSelection(.enabled)
+                    // UITextView ベースの SelectableRichTextView で部分選択を実現
+                    // SwiftUI Text.textSelection(.enabled) はビュー全体が選択単位になる制約があるため非採用
+                    SelectableRichTextView(
+                        attributedText: buildNSAttributedString(content),
+                        selectionTintColor: selectionTintColor
+                    )
                 }
             }
         }
@@ -883,6 +886,78 @@ struct MarkdownTextView: View {
             }
         }
 
+        return result
+    }
+
+    // MARK: - NSAttributedString Builder（UITextViewベースの部分選択用）
+
+    /// Markdownテキストを NSAttributedString に変換する（インラインコード・太字・斜体対応）
+    private func buildNSAttributedString(_ input: String) -> NSAttributedString {
+        let bodyFont = UIFont.preferredFont(forTextStyle: .body)
+        let defaultAttrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: UIColor(textColor),
+            .font: bodyFont
+        ]
+        let result = NSMutableAttributedString()
+        var remaining = input
+
+        while !remaining.isEmpty {
+            if let codeMatch = remaining.firstMatch(of: /`([^`]+)`/) {
+                let before = String(remaining[remaining.startIndex..<codeMatch.range.lowerBound])
+                if !before.isEmpty {
+                    result.append(parseNSFormatted(before, defaultAttrs: defaultAttrs))
+                }
+                let codeAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.monospacedSystemFont(ofSize: bodyFont.pointSize, weight: .regular),
+                    .foregroundColor: UIColor(Color(hex: "a6e3a1")),
+                    .backgroundColor: UIColor(Color(hex: "11111b"))
+                ]
+                result.append(NSAttributedString(string: String(codeMatch.1), attributes: codeAttrs))
+                remaining = String(remaining[codeMatch.range.upperBound...])
+            } else {
+                result.append(parseNSFormatted(remaining, defaultAttrs: defaultAttrs))
+                break
+            }
+        }
+        return result
+    }
+
+    /// 太字・斜体の Markdown インライン記法を NSAttributedString に変換
+    private func parseNSFormatted(
+        _ input: String,
+        defaultAttrs: [NSAttributedString.Key: Any]
+    ) -> NSAttributedString {
+        let bodyFont = UIFont.preferredFont(forTextStyle: .body)
+        let result = NSMutableAttributedString()
+        var remaining = input
+
+        while !remaining.isEmpty {
+            if let boldMatch = remaining.firstMatch(of: /\*\*(.+?)\*\*/) {
+                let before = String(remaining[remaining.startIndex..<boldMatch.range.lowerBound])
+                if !before.isEmpty {
+                    result.append(NSAttributedString(string: before, attributes: defaultAttrs))
+                }
+                var boldAttrs = defaultAttrs
+                boldAttrs[.font] = UIFont.boldSystemFont(ofSize: bodyFont.pointSize)
+                result.append(NSAttributedString(string: String(boldMatch.1), attributes: boldAttrs))
+                remaining = String(remaining[boldMatch.range.upperBound...])
+            } else if let italicMatch = remaining.firstMatch(of: /\*(.+?)\*/) {
+                let before = String(remaining[remaining.startIndex..<italicMatch.range.lowerBound])
+                if !before.isEmpty {
+                    result.append(NSAttributedString(string: before, attributes: defaultAttrs))
+                }
+                var italicAttrs = defaultAttrs
+                let italicDescriptor = bodyFont.fontDescriptor.withSymbolicTraits(.traitItalic)
+                italicAttrs[.font] = italicDescriptor.map {
+                    UIFont(descriptor: $0, size: bodyFont.pointSize)
+                } ?? bodyFont
+                result.append(NSAttributedString(string: String(italicMatch.1), attributes: italicAttrs))
+                remaining = String(remaining[italicMatch.range.upperBound...])
+            } else {
+                result.append(NSAttributedString(string: remaining, attributes: defaultAttrs))
+                break
+            }
+        }
         return result
     }
 
@@ -1035,6 +1110,44 @@ struct SelectableTextView: UIViewRepresentable {
 
     /// SwiftUI レイアウトエンジンに正確な高さを伝える
     /// これがないと UITextView の高さが 0 や過剰になる場合がある
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        let width = proposal.width ?? UIScreen.main.bounds.width
+        let fitsSize = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: fitsSize.height)
+    }
+}
+
+// MARK: - Selectable Rich Text View（NSAttributedString対応 UITextViewラッパー）
+// MarkdownTextView 内の各テキストブロックに使用し、長押しでの部分選択・コピーを実現する。
+// SwiftUI Text.textSelection(.enabled) はコンテナ全体を1選択単位として扱うため
+// 細かな範囲指定（ドラッグハンドルによる文字単位選択）が機能しない。
+// UITextView(isEditable: false, isSelectable: true) + NSAttributedString で完全解決する。
+
+struct SelectableRichTextView: UIViewRepresentable {
+    let attributedText: NSAttributedString
+    var selectionTintColor: UIColor = .systemBlue
+
+    func makeUIView(context: Context) -> UITextView {
+        let tv = UITextView()
+        tv.isEditable = false
+        tv.isSelectable = true
+        tv.isScrollEnabled = false          // SwiftUI が intrinsicContentSize でサイズを決定
+        tv.backgroundColor = .clear
+        tv.textContainerInset = .zero
+        tv.textContainer.lineFragmentPadding = 0
+        tv.tintColor = selectionTintColor
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        return tv
+    }
+
+    func updateUIView(_ tv: UITextView, context: Context) {
+        if tv.attributedText != attributedText {
+            tv.attributedText = attributedText
+        }
+        tv.tintColor = selectionTintColor
+    }
+
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         let width = proposal.width ?? UIScreen.main.bounds.width
         let fitsSize = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))

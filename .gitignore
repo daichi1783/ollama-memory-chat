@@ -38,3 +38,6 @@ config.local.yaml
 # テスト一時ファイル
 *.log
 .pytest_cache/
+
+# ユーザー設定（APIキーを含む）
+data/config.yaml

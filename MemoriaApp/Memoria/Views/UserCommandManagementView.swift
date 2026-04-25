@@ -263,11 +263,11 @@ struct AddCommandView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // フォーム
                     formCard
 
-                    // テンプレートヒント
+                    // テンプレートヒント（ステップ式）
                     templateHint
 
                     // バリデーションエラー
@@ -409,7 +409,7 @@ struct AddCommandView: View {
     }
 
     private var templateField: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(loc["cmd_template_label"])
                 .font(.caption.weight(.semibold))
                 .foregroundColor(theme.colors.subtext0)
@@ -426,40 +426,147 @@ struct AddCommandView: View {
                 .background(Color.clear)
                 .frame(minHeight: 90)
                 .padding(.horizontal, 10)
-                .padding(.bottom, 12)
+                .padding(.top, 4)
                 .overlay(alignment: .topLeading) {
                     if templateInput.isEmpty {
                         Text(loc["cmd_field_template"])
                             .font(.system(.body, design: .monospaced))
                             .foregroundColor(theme.colors.overlay0)
                             .padding(.leading, 14)
-                            .padding(.top, 8)
+                            .padding(.top, 12)
                             .allowsHitTesting(false)
                     }
                 }
+
+            // {input} ワンタップ挿入ボタン
+            HStack {
+                Spacer()
+                Button {
+                    let needsSpace = !templateInput.isEmpty
+                        && !templateInput.hasSuffix(" ")
+                        && !templateInput.hasSuffix("\n")
+                    templateInput += (needsSpace ? " " : "") + "{input}"
+                    focusedField = .template
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 11))
+                        Text(loc["cmd_input_insert_btn"])
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    }
+                    .foregroundColor(theme.colors.blue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(theme.colors.blue.opacity(0.12))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
         }
     }
 
-    // MARK: - Template Hint
+    // MARK: - Template Hint（コマンドの仕組み説明）
 
     private var templateHint: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "lightbulb")
-                .font(.caption)
-                .foregroundColor(theme.colors.yellow)
-                .padding(.top, 1)
-            Text(loc["cmd_template_hint"])
-                .font(.caption)
-                .foregroundColor(theme.colors.subtext0)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 12) {
+
+            // タイトル
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.colors.yellow)
+                Text(loc["cmd_hint_title"])
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(theme.colors.yellow)
+            }
+
+            // フィールド説明3行
+            VStack(alignment: .leading, spacing: 7) {
+                hintFieldRow(label: loc["cmd_name_label"],     desc: loc["cmd_hint_name_desc"])
+                hintFieldRow(label: loc["cmd_desc_label"],     desc: loc["cmd_hint_desc_desc"])
+                hintFieldRow(label: loc["cmd_template_label"], desc: loc["cmd_hint_template_desc"])
+            }
+
+            Divider()
+                .background(theme.colors.yellow.opacity(0.25))
+
+            // 使用例
+            VStack(alignment: .leading, spacing: 6) {
+                Text(loc["cmd_hint_example_title"])
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(theme.colors.subtext0)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    hintExRow(label: loc["cmd_hint_ex_template_label"],
+                              value: loc["cmd_hint_ex_template_val"],
+                              valueColor: theme.colors.subtext1)
+
+                    Divider().padding(.vertical, 1)
+
+                    hintExRow(label: loc["cmd_hint_ex_input_label"],
+                              value: loc["cmd_hint_ex_input_val"],
+                              valueColor: theme.colors.blue)
+
+                    HStack {
+                        Spacer().frame(width: 72)
+                        Text("↓")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.colors.overlay0)
+                    }
+
+                    hintExRow(label: loc["cmd_hint_ex_send_label"],
+                              value: loc["cmd_hint_ex_send_val"],
+                              valueColor: theme.colors.green)
+                }
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(theme.colors.surface1)
+                )
+            }
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(theme.colors.yellow.opacity(0.08))
+                .fill(theme.colors.yellow.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(theme.colors.yellow.opacity(0.18), lineWidth: 1)
+                )
         )
+    }
+
+    private func hintFieldRow(label: String, desc: String) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            Text(label)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(theme.colors.blue)
+            Text(" — ")
+                .font(.system(size: 11))
+                .foregroundColor(theme.colors.overlay0)
+            Text(desc)
+                .font(.system(size: 11))
+                .foregroundColor(theme.colors.subtext0)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func hintExRow(label: String, value: String, valueColor: Color) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(theme.colors.subtext0)
+                .frame(width: 66, alignment: .leading)
+            Text(value)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(valueColor)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - Error Banner
