@@ -41,3 +41,6 @@ config.local.yaml
 
 # ユーザー設定（APIキーを含む）
 data/config.yaml
+
+# Memoria license — public key bundled per-environment, not committed
+backend/memoria-public-key.json

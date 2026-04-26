@@ -25,6 +25,7 @@ import memory_manager as mm
 import command_manager as cm
 import ollama_client as oc
 import ollama_setup as os_mgr
+import license_service as ls
 
 def _get_system_language() -> str:
     """macOSのシステム言語を取得する。ja / en / es のいずれかを返す。"""
@@ -185,6 +186,21 @@ class AIEngineUpdate(BaseModel):
 async def chat_endpoint(req: ChatRequest):
     """メインチャットエンドポイント"""
     try:
+        # ライセンスゲート: 無料枠 20 問を超えたら 402 でブロック
+        # 特殊コマンド (clear/help/memory) は AI を呼ばないのでカウント対象外（後段で increment）
+        license = ls.get_service()
+        if not license.can_send_message():
+            state = license.state()
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error": "free_limit_reached",
+                    "question_count": state.question_count,
+                    "free_limit": state.free_limit,
+                    "pricing_url": "https://kotomori.app/ja/pricing",
+                },
+            )
+
         # セッションが存在しない場合は作成（最初のメッセージの最初の20文字をタイトルに）
         mm.ensure_session_exists(req.session_id)
         existing_messages = mm.get_recent_messages(req.session_id, limit=1)
@@ -230,6 +246,7 @@ async def chat_endpoint(req: ChatRequest):
         if command_name == "grammar":
             if not body.strip():
                 return ChatResponse(reply="💡 使い方: `/grammar [分析したいテキスト]`\n例: `/grammar She don't know nothing about it.`", command_used="grammar")
+            license.increment_question_count()
             lang_code = _get_system_language()
             if lang_code == "en":
                 grammar_prompt = f"""Language analysis example:
@@ -297,6 +314,7 @@ Explicación gramatical:"""
             command_prompt = cm.get_command_prompt(command_name, body)
             if command_prompt:
                 # コマンドは記憶を使わずに直接処理
+                license.increment_question_count()
                 reply = oc.chat(
                     messages=[{"role": "user", "content": command_prompt}],
                     system_prompt="あなたは指示に従って正確に作業を行うAIアシスタントです。余計な説明は不要です。"
@@ -314,6 +332,7 @@ Explicación gramatical:"""
         recent_messages.append({"role": "user", "content": req.message})
 
         # AI呼び出し
+        license.increment_question_count()
         reply = oc.chat(messages=recent_messages, system_prompt=system_prompt)
 
         # 会話を保存
@@ -345,6 +364,48 @@ Explicación gramatical:"""
         if "timeout" in err_str.lower() or "Timeout" in error_type_name:
             raise HTTPException(status_code=500, detail="⏰ AIの応答がタイムアウトしました。しばらく待ってから再試行してください。")
         raise HTTPException(status_code=500, detail=f"❌ 予期しないエラーが発生しました ({error_type_name})")
+
+# ===== ライセンスAPI =====
+
+class LicenseActivateRequest(BaseModel):
+    license_key: str = Field(..., min_length=8, max_length=128)
+
+
+def _serialize_license_state(state) -> dict:
+    return {
+        "is_pro": state.is_pro,
+        "question_count": state.question_count,
+        "free_limit": state.free_limit,
+        "remaining_free": max(0, state.free_limit - state.question_count),
+        "license_masked": state.license_masked,
+        "expires_at": state.expires_at,
+        "configuration_missing": state.configuration_missing,
+        "pricing_url": "https://kotomori.app/ja/pricing",
+    }
+
+
+@app.get("/api/license/state")
+async def license_state_endpoint():
+    """フロントエンドが起動時 + アクティベート後に叩いて状態を取得する。"""
+    return _serialize_license_state(ls.get_service().state())
+
+
+@app.post("/api/license/activate")
+async def license_activate_endpoint(req: LicenseActivateRequest):
+    """ユーザーが入力したライセンスキーを kotomori API に転送し、トークンを保存する。"""
+    ok, body = ls.get_service().activate(req.license_key)
+    if not ok:
+        # 4xx 系（key 不正・device 上限など）はそのまま 400 で返す
+        raise HTTPException(status_code=400, detail=body)
+    return _serialize_license_state(ls.get_service().state())
+
+
+@app.post("/api/license/deactivate")
+async def license_deactivate_endpoint():
+    """ローカルのトークンだけ消す（サーバの device row はそのまま）。"""
+    ls.get_service().deactivate()
+    return _serialize_license_state(ls.get_service().state())
+
 
 # ===== セッション管理API =====
 

@@ -1172,3 +1172,164 @@ body { font-size: var(--base-font-size); }
   color: var(--text-primary);
   border-color: var(--accent);
 }
+
+/* ===== License panel (settings.html) + Paywall overlay (any page) ===== */
+
+.license-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.license-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+}
+.license-status-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+.license-status-text { flex: 1; min-width: 0; }
+.license-status-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.license-status-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.license-warning {
+  font-size: 12px;
+  color: #f38ba8;
+  background: rgba(243, 139, 168, 0.08);
+  border-left: 3px solid #f38ba8;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.license-input-row {
+  display: flex;
+  gap: 8px;
+}
+.license-input {
+  flex: 1;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+}
+.license-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.license-btn-primary {
+  padding: 10px 18px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.license-btn-primary:hover { background: var(--accent-hover); }
+.license-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.license-btn-secondary {
+  padding: 10px 18px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.license-btn-secondary:hover { background: var(--bg-tertiary); }
+.license-buy-link {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  align-self: flex-start;
+}
+.license-buy-link:hover { text-decoration: underline; }
+
+/* Paywall — full-screen modal, blocks chat input until dismissed */
+.paywall-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+.paywall-card {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 36px 32px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.paywall-icon { font-size: 48px; margin-bottom: 12px; }
+.paywall-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+.paywall-body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+.paywall-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.paywall-btn-primary {
+  padding: 12px 20px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: block;
+}
+.paywall-btn-primary:hover { background: var(--accent-hover); }
+.paywall-btn-secondary {
+  padding: 12px 20px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.paywall-btn-tertiary {
+  padding: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+}

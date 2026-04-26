@@ -1,0 +1,18 @@
+{
+  "_comment": "Placeholder. Real JWK lives in memoria-public-key.json (gitignored).",
+  "_instructions": [
+    "1. From the kotomori repo, run: pnpm --filter web gen:memoria-keys",
+    "2. The script prints 3 blocks. Take Block 3 (the JWK JSON object).",
+    "3. Save it as /Users/daichi/Projects/Memoria/mac-app/backend/memoria-public-key.json",
+    "4. The Python LicenseService loads it on startup to verify ES256 activation tokens."
+  ],
+  "_shape": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "<base64url>",
+    "y": "<base64url>",
+    "kid": "memoria-2026-04-26",
+    "alg": "ES256",
+    "use": "sig"
+  }
+}
