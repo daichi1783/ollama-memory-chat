@@ -90,7 +90,10 @@ async function apiRequest(method, endpoint, body = null) {
   const response = await fetch(`${API_BASE}${endpoint}`, options);
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'エラーが発生しました' }));
-    throw new Error(err.detail || 'API Error');
+    const e = new Error(typeof err.detail === 'string' ? err.detail : (err.detail?.error || 'API Error'));
+    e.status = response.status;
+    e.detail = err.detail;
+    throw e;
   }
   return response.json();
 }
@@ -281,9 +284,14 @@ async function sendMessage() {
     if (data.command_used === 'remember') updateGlobalMemoryBadge();
   } catch (e) {
     removeLoading(loadingId);
-    // Fix⑫: クラウドAI接続失敗時にOllamaへの切り替え提案
-    const isCloudEngine = ['claude', 'gemini', 'openai_compatible'].includes(_currentEngine);
-    appendMessage('ai', `❌ エラー: ${e.message}`, { isError: true, showOllamaFallback: isCloudEngine });
+    // 無料枠 20 問を使い切ったら paywall を出して、エラーメッセージは出さない
+    if (e.status === 402 && window.MemoriaPaywall) {
+      window.MemoriaPaywall.show();
+    } else {
+      // Fix⑫: クラウドAI接続失敗時にOllamaへの切り替え提案
+      const isCloudEngine = ['claude', 'gemini', 'openai_compatible'].includes(_currentEngine);
+      appendMessage('ai', `❌ エラー: ${e.message}`, { isError: true, showOllamaFallback: isCloudEngine });
+    }
   } finally {
     isLoading = false;
     toggleSendButton(true);
