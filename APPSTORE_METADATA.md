@@ -9,10 +9,11 @@
 
 | 項目 | 値 |
 |---|---|
-| アプリ名 | Memoria |
-| サブタイトル（JA） | 記憶するAIアシスタント |
-| サブタイトル（EN） | AI Assistant That Remembers |
-| Bundle ID | com.daichi.memoria |
+| アプリ名（App Store） | Memoria - Local AI |
+| アプリ名（ホーム画面） | Memoria |
+| サブタイトル（JA） | 記憶するローカルAI |
+| サブタイトル（EN） | Private On-Device AI Memory |
+| Bundle ID | com.daichi.memoria.Memoria |
 | SKU | memoria-ios-001 |
 | カテゴリ（メイン） | **Productivity**（仕事効率化） |
 | カテゴリ（サブ） | **Utilities**（ユーティリティ） |
@@ -26,12 +27,12 @@
 
 ### アプリ名（30文字以内）
 ```
-Memoria - 記憶するAI
+Memoria - Local AI
 ```
 
 ### サブタイトル（30文字以内）
 ```
-会話を覚えるオフラインアシスタント
+完全オフラインで記憶するAI
 ```
 
 ### 説明文（4000文字以内）
@@ -105,13 +106,17 @@ AI,チャット,アシスタント,記憶,オフライン,プライバシー,音
 
 ### サポートURL
 ```
-https://daichi1783.github.io/memoria-support
+https://kotomori.app/apps/memoria
 ```
-※ GitHubPages等で作成（後述）
 
 ### マーケティングURL（任意）
 ```
-https://daichi1783.github.io/memoria
+https://kotomori.app/apps/memoria
+```
+
+### プライバシーポリシーURL
+```
+https://kotomori.app/privacy
 ```
 
 ---
@@ -120,12 +125,12 @@ https://daichi1783.github.io/memoria
 
 ### App Name (30 chars max)
 ```
-Memoria - AI That Remembers
+Memoria - Local AI
 ```
 
 ### Subtitle (30 chars max)
 ```
-Private Offline AI Assistant
+Private On-Device AI Memory
 ```
 
 ### Description (4000 chars max)
