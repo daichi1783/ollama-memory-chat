@@ -37,67 +37,62 @@ Memoria - Local AI
 
 ### 説明文（4000文字以内）
 ```
+Memoriaは、iPhoneの中だけで動く、長期記憶つきのAIチャットアシスタントです。電波ゼロでも応答し、あなたとの会話を覚えていてくれます。
+
 飛行機の中で、英語のメニューを翻訳したい。
 山奥のキャンプ場で、明日の予定を整理したい。
 電波が届かない地下鉄で、ふと浮かんだアイデアを書き留めたい。
 そんなとき、Memoriaは答えてくれます。
 
-Memoriaは、iPhoneの中だけで動く"記憶するAI"です。
-ChatGPTやGeminiのようなクラウドAIと違い、すべての処理が端末内で完結。電波がなくてもAIが応答し、あなたの言葉は1バイトも外に送られません。
-
 ━━ こんなときに使える ━━
 
 ✈️ 海外旅行・出張先
-電波が不安定な空港、機内、地方都市。Memoriaなら通信不要で、翻訳・文章作成・調べ物ができます。ローミング料金もデータ通信量も0。
+電波が不安定な空港、機内、地方都市。通信不要で翻訳・文章作成・調べ物ができ、ローミング料金もデータ通信量も0。
 
 🚇 地下鉄・新幹線・山間部
-地下、トンネル、山小屋。オフライン環境でもMemoriaは止まりません。「あの会議までに資料案をまとめておこう」がいつでもどこでも。
+地下、トンネル、山小屋。オフライン環境でもMemoriaは止まりません。
 
 🔒 機密性の高い相談
-仕事の悩み、健康、お金、家族の話。クラウドAIには送りたくない内容も、Memoriaなら端末内で完結するので安心。
+仕事の悩み、健康、お金、家族の話。クラウドに送りたくない内容も、端末内で完結するので安心。
 
 📓 日記・学習ログ・思考整理
-書きためた内容をMemoriaが覚えていてくれます。毎回ゼロから自己紹介し直す必要はありません。
+書きためた内容を覚えていてくれます。毎回ゼロから自己紹介し直す必要はありません。
 
-━━ なぜMemoriaなのか（他のAIアプリとの違い） ━━
+🌏 語学学習
+日本語・英語・スペイン語の3言語で会話・翻訳・文法チェック。覚えた表現はメモリに保存して、いつでも引き出せます。
 
-🆚 他のオンデバイスAIアプリ（PocketPal、Layla 等）では…
-"オフラインで動く"だけで、記憶機能がありません。新しい会話を始めると、AIはあなたを完全に忘れてしまいます。毎回「私は〇〇な人で、こういう仕事をしていて…」と説明し直す必要があります。
+━━ Memoriaの特徴 ━━
 
-✨ Memoriaなら…
-セッションをまたいだ長期記憶を内蔵。10往復ごとに会話を自動要約してSQLiteに保存し、新しい会話には過去の文脈が自動で注入されます。「先週話したあの本の続き」「いつも使うあの言い回し」を覚えていてくれます。
+🧠 セッションをまたぐ長期記憶
+Memoria最大の強みは"記憶"です。会話は自動的に要約されSQLiteに保存され、新しい会話には過去の文脈が自動で注入されます。
+他のオンデバイスAIアプリは新しい会話を始めるたびに、AIがあなたのことを完全に忘れます——「私は〇〇な仕事で…」「ビーガンです」「アレルギーは…」と毎回説明し直すのは、地味にストレスです。Memoriaは「先週話したあの本の続き」「いつも使うあの言い回し」を覚えています。
+クラウド型のチャットAIにも記憶機能はありますが、月額課金が必要で、記憶はあちらのサーバーに保管されます。Memoriaの記憶は最後の1バイトまでiPhone内のSQLiteの中。会員登録も月額課金も不要、外部送信ゼロです。
 
-🆚 ChatGPT、Gemini などクラウドAIでは…
-あなたの入力は外部サーバーに送信されます。記憶機能を使うには月額課金が必要で、その記憶もクラウド上に保管されます。電波がなければ動きません。
+📱 完全オンデバイス推論で電波を選ばない
+Gemma 3 1B（Google DeepMind）をiPhone上でローカル実行。初回のみWi-Fiで約600MBダウンロードし、以降は機内モードでも完全に動作します。「サーバー混雑」も「APIエラー」もありません。海外の機内、山小屋、地下鉄——通信が落ちる場所こそ、Memoriaの本領です。
 
-✨ Memoriaなら…
-すべて端末内で完結。会員登録不要、月額課金不要。記憶もチャット履歴もiPhoneのSQLiteに保存され、外部送信ゼロ。機内モードでも動作。
-
-🆚 Apple Intelligence（Siri）では…
-記憶のカスタマイズができず、自由なチャット体験ではありません。深い対話には向いていません。
-
-✨ Memoriaなら…
-完全に自由な対話 + あなただけのグローバルメモリ。/remember コマンドで「私はビーガンです」「会社名は◯◯です」と保存しておけば、すべての会話に自動で反映されます。
-
-━━ 主要機能 ━━
-
-🧠 長期記憶エンジン
-10往復ごとに会話を自動要約してSQLiteに保存。グローバルメモリと組み合わせて、すべての会話に"あなただけのコンテキスト"を注入。
-
-📱 完全オンデバイス推論
-Gemma 3 1B（Google DeepMind）をiPhone上でローカル実行。初回のみWi-Fiで約600MBダウンロード、以降は機内モードでも動作。
+🌍 3言語ネイティブの語学パートナー
+UI・音声入力ともに日本語・English・Españolに対応。日本語で打って英語で返してもらう、英語の文法を日本語で解説してもらう、スペイン語の旅行フレーズを覚える……といった言語をまたいだ使い方が自然にできます。海外移住・留学・ビジネス渡航中の語学サポートに最適。クラウドに頼らないので、現地で電波がなくても動きます。
 
 🎙️ オフライン音声入力
-SFSpeechRecognizerによるオンデバイス音声認識。日本語・英語・スペイン語対応。声も外に出ません。
+オンデバイス音声認識で、日本語・英語・スペイン語に対応。声も外に出ません。発音練習、運転中・調理中の音声メモ、外国語のシャドーイングなど、声を使った学習にもどうぞ。
 
-📚 セッション管理
-仕事・学習・日記・趣味…テーマ別に独立した記憶を持つセッションを作成可能。
+⚡ 強力なスラッシュコマンド
+よく使う指示をワンタップで実行：
+　/english — 日本語→英語へ瞬時に翻訳
+　/japanese — 英語→日本語
+　/spanish — 日本語→スペイン語
+　/cal — 英語の文法・表現チェック（語学学習者の最強の味方）
+　/grammar — 文法を詳しく解説
+　/remember — 大切な情報をグローバルメモリに保存
+　/memory — 保存した記憶の一覧
+さらに /addcommand で、自分専用の繰り返し処理を**自然言語のまま**登録できます。「丁寧語に直して」「TOEFL風に書き換えて」「3歳児にもわかるように」など、コードを書かずに自分だけのコマンドが作れます。
 
-⚡ スラッシュコマンド
-/english（翻訳）、/cal（文法チェック）、/remember（記憶保存）など、よく使う指示をワンタップで。/addcommand で自分専用コマンドも作れます。
+📚 テーマ別セッション管理
+仕事・学習・日記・趣味など、テーマごとに独立した記憶を持つセッションを作成可能。仕事の文脈とプライベートの文脈が混ざりません。検索とエクスポートにも対応。
 
-🎨 美しいデザイン
-Catppuccin Mocha/Latteテーマ、iMessageライクなチャットUI、心地よいハプティクス。
+🎨 毎日触りたくなるデザイン
+Catppuccin Mocha（ダーク）/ Latte（ライト）テーマ、iMessageライクなチャットバブル、心地よいハプティクス。
 
 ━━ プライバシーファースト ━━
 
@@ -111,7 +106,7 @@ Catppuccin Mocha/Latteテーマ、iMessageライクなチャットUI、心地よ
 
 iOS 17.0以降 / iPhone対応
 初回起動時にAIモデルをWi-Fiダウンロード（約600MB）
-以降はモバイルデータ通信・Wi-Fiどちらも不要
+以降は通信不要
 
 ━━ 対応言語 ━━
 
@@ -163,13 +158,12 @@ Remembers you. Works offline.
 
 ### Description (4000 chars max)
 ```
+Memoria is an AI chat assistant with long-term memory that runs entirely on your iPhone. It answers offline and remembers your conversations.
+
 Translate a menu mid-flight at 35,000 feet.
-Plan tomorrow's meeting from a remote campsite, no signal, no problem.
+Plan tomorrow's meeting from a remote campsite, no signal.
 Catch a fleeting idea on a subway platform 200 feet underground.
 Memoria just works.
-
-Memoria is an AI assistant that runs entirely on your iPhone — and remembers you.
-Unlike cloud AIs (ChatGPT, Gemini, Claude), every word stays on your device. No signal needed. Not a single byte sent out.
 
 ━━ WHEN MEMORIA SHINES ━━
 
@@ -180,50 +174,46 @@ No data roaming, no spotty airport Wi-Fi. Memoria translates, drafts, and answer
 Subway, tunnel, mountain hut. When everything else stops working, Memoria keeps going.
 
 🔒 Sensitive topics
-Work problems. Health. Money. Family. Things you'd never paste into ChatGPT — Memoria handles them on-device, no exceptions.
+Work problems. Health. Money. Family. Things you'd never paste into a cloud AI — Memoria handles them on-device, no exceptions.
 
 📓 Journal, learning log, thinking out loud
-Memoria remembers what you wrote last week. No need to re-introduce yourself every conversation.
+Memoria remembers what you wrote last week. No re-introducing yourself every conversation.
 
-━━ HOW IT'S DIFFERENT (vs. other AI apps) ━━
-
-🆚 Other on-device AI apps (PocketPal, Layla, LLM Farm)
-"Offline" but no memory. Each new chat is a fresh start. The AI forgets you the moment you open a new session — so you keep retyping "I'm vegan", "I work in marketing"…
-
-✨ Memoria
-Built-in long-term memory across sessions. Conversations are auto-summarized every 10 exchanges and stored in SQLite. Past context is automatically injected into new chats. "That book we discussed last week" — Memoria remembers.
-
-🆚 ChatGPT, Gemini, and other cloud AIs
-Your inputs go to remote servers. Memory features cost a monthly subscription, and the memory itself lives in the cloud. Useless without signal.
-
-✨ Memoria
-Everything stays on-device. No signup, no subscription. Memory and chat history live in your iPhone's SQLite — zero external transmission. Works in airplane mode forever.
-
-🆚 Apple Intelligence / Siri
-No customizable memory. Not built for free-form deep conversations.
-
-✨ Memoria
-Free-form chat plus your own global memory. Save "I'm vegan", "My company is Acme Corp" with /remember and they'll be reflected in every conversation automatically.
+🌏 Language learning
+Chat, translate, and grammar-check across English, Japanese, and Spanish. Save vocabulary you've learned to memory and recall it any time.
 
 ━━ KEY FEATURES ━━
 
-🧠 Persistent memory engine
-Auto-summarized every 10 exchanges, stored in SQLite. Combine session memory with global memory to inject your personal context into every chat.
+🧠 Long-term memory across sessions
+Memory is what sets Memoria apart. Conversations are automatically summarized into SQLite, and past context is injected into every new chat.
+Most other on-device AI apps treat every new chat as a blank page — you keep retyping "I'm vegan", "I work in marketing", "my allergies are…". Memoria remembers "that book we discussed last week" and "the phrasing you always use".
+Cloud chat AIs offer memory too, but it costs a monthly subscription and lives on their servers. Memoria's memory lives entirely in your iPhone's SQLite — every byte. No signup, no subscription, zero external transmission.
 
-📱 Fully on-device inference
-Gemma 3 1B (Google DeepMind) runs locally on your iPhone. One-time ~600MB Wi-Fi download, then airplane-mode-friendly forever.
+📱 On-device inference, no signal required
+Gemma 3 1B (Google DeepMind) runs locally on your iPhone. One-time ~600MB Wi-Fi download, then airplane-mode-friendly forever. No "server busy", no API errors. Where signal drops out — the plane, the mountain hut, the underground — is exactly where Memoria comes into its own.
+
+🌍 Trilingual native support
+UI and voice input both support English, Japanese, and Spanish. Type in Japanese, get English back. Have your English grammar explained in Japanese. Memorize Spanish travel phrases. Cross-language workflows feel natural — perfect for expats, students abroad, or international business travelers. And because it's on-device, it still works when you have no signal in a foreign country.
 
 🎙️ Offline voice input
-SFSpeechRecognizer with on-device recognition. Japanese, English, Spanish. Your voice never leaves the device either.
+On-device speech recognition for English, Japanese, Spanish. Your voice never leaves the device. Pronunciation practice, hands-free notes while driving or cooking, foreign-language shadowing — all yours.
+
+⚡ Powerful slash commands
+One-tap shortcuts for frequent tasks:
+　/english — Translate to English
+　/japanese — Translate to Japanese
+　/spanish — Translate to Spanish
+　/cal — English grammar & phrasing check (language learners' best friend)
+　/grammar — Detailed grammar explanations
+　/remember — Save important info to global memory
+　/memory — View saved memories
+With /addcommand, you can register your own repeated workflows in **plain language**: "rewrite in formal English", "make it sound TOEFL-academic", "explain like I'm five". No code required — your own custom commands in seconds.
 
 📚 Session management
-Work, study, journal, hobbies — each session maintains an independent memory thread.
+Create separate sessions for work, study, journal, hobbies — each with its own independent memory thread. Contexts never bleed. Search and export supported.
 
-⚡ Slash commands
-/english (translate), /cal (grammar check), /remember (save to memory). Build your own with /addcommand.
-
-🎨 Beautiful design
-Catppuccin Mocha/Latte themes, iMessage-style chat UI, satisfying haptics.
+🎨 Design you'll want to use daily
+Catppuccin Mocha (dark) / Latte (light) themes, iMessage-style chat bubbles, satisfying haptics.
 
 ━━ PRIVACY FIRST ━━
 
@@ -241,8 +231,8 @@ No internet needed afterwards
 
 ━━ LANGUAGES ━━
 
-UI: Japanese, English, Spanish
-Voice: Japanese, English, Spanish
+UI: English, Japanese, Spanish
+Voice: English, Japanese, Spanish
 
 "Your AI, your memories, only on your device."
 Try Memoria — the AI assistant that doesn't compromise your privacy.
@@ -274,67 +264,62 @@ IA con memoria, sin conexión
 
 ### Descripción (4000 chars max)
 ```
+Memoria es un asistente de chat con IA y memoria a largo plazo que se ejecuta enteramente en tu iPhone. Responde sin conexión y recuerda tus conversaciones.
+
 Traducir un menú a 10.000 metros de altura.
 Planificar la reunión de mañana desde un camping sin cobertura.
 Anotar una idea en el metro, 60 metros bajo tierra.
 Memoria simplemente funciona.
 
-Memoria es un asistente de IA que se ejecuta enteramente en tu iPhone — y te recuerda.
-A diferencia de las IAs en la nube (ChatGPT, Gemini, Claude), cada palabra se queda en tu dispositivo. Sin conexión necesaria. Ni un solo byte sale fuera.
-
 ━━ CUÁNDO BRILLA MEMORIA ━━
 
 ✈️ Viajes y vuelos
-Sin roaming, sin Wi-Fi inestable de aeropuerto. Memoria traduce, redacta y responde en cualquier lugar del mundo — con cero cargos por datos.
+Sin roaming, sin Wi-Fi inestable de aeropuerto. Memoria traduce, redacta y responde en cualquier lugar — con cero cargos por datos.
 
 🚇 Metro, montañas, cualquier lugar offline
 Metro, túnel, refugio de montaña. Cuando todo lo demás deja de funcionar, Memoria sigue.
 
 🔒 Temas delicados
-Problemas de trabajo. Salud. Dinero. Familia. Cosas que nunca pondrías en ChatGPT — Memoria las maneja en el dispositivo, sin excepciones.
+Problemas de trabajo. Salud. Dinero. Familia. Cosas que nunca pondrías en una IA en la nube — Memoria las maneja en el dispositivo, sin excepciones.
 
 📓 Diario, registro de aprendizaje, pensamiento libre
-Memoria recuerda lo que escribiste la semana pasada. Sin necesidad de presentarte de nuevo en cada conversación.
+Memoria recuerda lo que escribiste la semana pasada. Sin presentarte de nuevo en cada conversación.
 
-━━ POR QUÉ ES DIFERENTE (vs. otras IAs) ━━
-
-🆚 Otras apps de IA en dispositivo (PocketPal, Layla, LLM Farm)
-"Offline" pero sin memoria. Cada chat nuevo empieza de cero. La IA te olvida en cuanto abres una sesión nueva — así que vuelves a escribir "soy vegano", "trabajo en marketing"…
-
-✨ Memoria
-Memoria a largo plazo entre sesiones, integrada. Las conversaciones se resumen automáticamente cada 10 intercambios y se guardan en SQLite. El contexto pasado se inyecta automáticamente en los nuevos chats. "Aquel libro que comentamos la semana pasada" — Memoria lo recuerda.
-
-🆚 ChatGPT, Gemini y otras IAs en la nube
-Tu entrada va a servidores remotos. Las funciones de memoria requieren suscripción mensual, y esa memoria vive en la nube. Inútiles sin señal.
-
-✨ Memoria
-Todo se queda en el dispositivo. Sin registro, sin suscripción. La memoria y el historial viven en SQLite dentro de tu iPhone — cero transmisión externa. Funciona para siempre en modo avión.
-
-🆚 Apple Intelligence / Siri
-Sin memoria personalizable. No diseñado para conversaciones profundas y libres.
-
-✨ Memoria
-Chat libre + tu propia memoria global. Guarda "soy vegano", "mi empresa es Acme Corp" con /remember y se reflejarán automáticamente en cada conversación.
+🌏 Aprendizaje de idiomas
+Chat, traducción y revisión gramatical en español, japonés e inglés. Guarda el vocabulario que aprendes en la memoria y recupéralo cuando quieras.
 
 ━━ FUNCIONES PRINCIPALES ━━
 
-🧠 Motor de memoria persistente
-Resumen automático cada 10 intercambios, guardado en SQLite. Combina memoria de sesión y memoria global para inyectar tu contexto personal en cada chat.
+🧠 Memoria a largo plazo entre sesiones
+La memoria es lo que distingue a Memoria. Las conversaciones se resumen automáticamente y se guardan en SQLite, y el contexto pasado se inyecta en cada chat nuevo.
+Otras apps de IA en dispositivo tratan cada chat nuevo como una página en blanco — vuelves a escribir "soy vegano", "trabajo en marketing", "mis alergias son…". Memoria recuerda "aquel libro que comentamos la semana pasada" y "esa expresión que usas siempre".
+Las IAs de chat en la nube también ofrecen memoria, pero requieren suscripción mensual y viven en sus servidores. La memoria de Memoria vive enteramente en SQLite dentro de tu iPhone — cada byte. Sin registro, sin suscripción, cero transmisión externa.
 
-📱 Inferencia 100% en dispositivo
-Gemma 3 1B (Google DeepMind) se ejecuta localmente en tu iPhone. Descarga única de ~600MB por Wi-Fi, después funciona para siempre en modo avión.
+📱 Inferencia en dispositivo, sin señal
+Gemma 3 1B (Google DeepMind) se ejecuta localmente en tu iPhone. Descarga única de ~600MB por Wi-Fi, después funciona para siempre en modo avión. Sin "servidor ocupado", sin errores de API. Donde la señal desaparece — el avión, el refugio, el metro — es justo donde Memoria brilla.
+
+🌍 Soporte trilingüe nativo
+Tanto la UI como la entrada de voz soportan español, japonés e inglés. Escribe en japonés y recibe la respuesta en inglés. Pide que te expliquen la gramática inglesa en japonés. Memoriza frases de viaje en español. Los flujos entre idiomas son naturales — perfecto para expatriados, estudiantes en el extranjero o profesionales en viajes internacionales. Y como funciona en el dispositivo, sigue funcionando aunque no tengas señal en el extranjero.
 
 🎙️ Entrada de voz offline
-SFSpeechRecognizer con reconocimiento en dispositivo. Japonés, inglés, español. Tu voz tampoco sale del dispositivo.
+Reconocimiento de voz en dispositivo en español, japonés, inglés. Tu voz tampoco sale del dispositivo. Practicar pronunciación, notas manos libres mientras conduces o cocinas, shadowing en idiomas extranjeros — todo tuyo.
 
-📚 Gestión de sesiones
-Trabajo, estudio, diario, aficiones — cada sesión mantiene su propio hilo de memoria.
+⚡ Comandos slash potentes
+Atajos de un toque para tareas frecuentes:
+　/english — Traducir al inglés
+　/japanese — Traducir al japonés
+　/spanish — Traducir al español
+　/cal — Revisión de gramática y expresiones en inglés (el mejor amigo del estudiante de idiomas)
+　/grammar — Explicación detallada de gramática
+　/remember — Guardar información importante en la memoria global
+　/memory — Ver las memorias guardadas
+Con /addcommand puedes registrar tus propios flujos en **lenguaje natural**: "reescribe en inglés formal", "hazlo sonar académico TOEFL", "explícamelo como si tuviera cinco años". Sin código — tus comandos personalizados en segundos.
 
-⚡ Comandos slash
-/english (traducir), /cal (revisar gramática), /remember (guardar en memoria). Crea los tuyos con /addcommand.
+📚 Gestión de sesiones por tema
+Crea sesiones separadas para trabajo, estudio, diario, aficiones — cada una con su propio hilo de memoria independiente. Los contextos nunca se mezclan. Búsqueda y exportación incluidas.
 
-🎨 Diseño cuidado
-Temas Catppuccin Mocha/Latte, interfaz tipo iMessage, hápticos agradables.
+🎨 Un diseño que querrás usar a diario
+Temas Catppuccin Mocha (oscuro) / Latte (claro), interfaz tipo iMessage, hápticos agradables.
 
 ━━ PRIVACIDAD PRIMERO ━━
 
@@ -352,8 +337,8 @@ No requiere internet después
 
 ━━ IDIOMAS ━━
 
-UI: Japonés, inglés, español
-Voz: Japonés, inglés, español
+UI: Español, japonés, inglés
+Voz: Español, japonés, inglés
 
 "Tu IA, tu memoria, sólo en tu dispositivo."
 Prueba Memoria — el asistente de IA que no compromete tu privacidad.
